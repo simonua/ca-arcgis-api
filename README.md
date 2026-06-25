@@ -16,8 +16,9 @@ deployment.
   closely; see [repository alignment](docs/repository-alignment.md).
 - The runtime target is Deno 2 with strict TypeScript, native Web APIs, built-in formatting,
   linting, type checking, and testing.
-- The fixed ArcGIS collection URL and source-response validator are implemented and tested with
-  synthetic fixtures; routine development performs no live source requests.
+- The fixed ArcGIS collection URL, source-response validator, operating-window gate, monotonic
+  five-minute permit, and shared no-overlap source-operation lock are implemented and tested with
+  synthetic inputs; routine development performs no live source requests.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
