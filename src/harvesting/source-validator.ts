@@ -153,9 +153,6 @@ function validateFeature(
     ok: true,
     value: Object.freeze({
       assetId,
-      sourceName: readOptionalString(attributes, 'Name'),
-      sourcePoolName: readOptionalString(attributes, 'Pool_Name'),
-      sourceLocation: readOptionalString(attributes, 'pool_location'),
       sourceStatus,
       sourceMaintenanceStatus: readOptionalString(attributes, 'Status2'),
       sourceAttendance: readOptionalNumber(attributes, 'Pool_Attendance'),

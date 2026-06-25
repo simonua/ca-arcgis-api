@@ -23,14 +23,9 @@ Deno.test('pool normalizer publishes only consumer-owned identity and semantic v
   for (
     const sourceOnlyValue of [
       'ASSET_SYNTHETIC_1',
-      'Source Name One',
-      'Source Pool One',
-      'Source Location One',
       'No Ongoing Maintenance',
       'Open',
       'AssetID',
-      'Pool_Name',
-      'pool_location',
       'Status2',
       'EditDate',
     ]

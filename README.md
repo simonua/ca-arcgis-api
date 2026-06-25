@@ -25,10 +25,12 @@ deployment, and routine development does not enable live ArcGIS access.
   not retained in that snapshot, failed publication leaves the prior snapshot untouched, and a `304`
   advances only harvester freshness. A pure semantic projection now applies injected, validated
   snapshot, attendance, and status freshness policy; reports closed-hours collection state; hides
-  expired values without mutating retained data; and exposes exact transition instants for future
-  representation-cache invalidation. The runner uses bounded startup jitter, separate wall and
-  monotonic deadlines, long-wait chunking, and no catch-up polling. Polling is disabled by default,
-  and routine development performs no live source requests.
+  expired values without mutating retained data; and exposes exact transition instants. A bounded
+  in-memory representation cache now owns canonical success-route keys, UTF-8 bodies, strong API
+  ETags, concurrent-fill coalescing, generation retirement, selective semantic invalidation, and
+  least-recently-used eviction under injected entry and byte limits. The runner uses bounded startup
+  jitter, separate wall and monotonic deadlines, long-wait chunking, and no catch-up polling. Polling
+  is disabled by default, and routine development performs no live source requests.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout

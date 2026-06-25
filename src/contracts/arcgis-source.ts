@@ -4,10 +4,7 @@ export const ARCGIS_COLLECTION_PATH =
   '/Qah4YRlnA96tI4X9/arcgis/rest/services/CA_Ammenities/FeatureServer/0/query' as const;
 
 export const ARCGIS_OUT_FIELDS = [
-  'Name',
   'AssetID',
-  'Pool_Name',
-  'pool_location',
   'Status',
   'Status2',
   'Pool_Attendance',
@@ -26,9 +23,6 @@ export type SourceField<T> =
 /** A source record narrowed at the ArcGIS boundary but not yet normalized for the public API. */
 export interface ArcGisSourceRecord {
   readonly assetId: string;
-  readonly sourceName: SourceField<string>;
-  readonly sourcePoolName: SourceField<string>;
-  readonly sourceLocation: SourceField<string>;
   readonly sourceStatus: string;
   readonly sourceMaintenanceStatus: SourceField<string>;
   readonly sourceAttendance: SourceField<number>;

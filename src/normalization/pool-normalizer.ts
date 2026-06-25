@@ -16,9 +16,9 @@ import type {
   PoolSnapshotCandidate,
   PoolSnapshotRecord,
 } from '../contracts/pool-snapshot.ts';
+import { isPoolApiId } from '../contracts/pool-identity.ts';
 
 const SOURCE_ASSET_ID_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])?$/;
-const API_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const WEB_APP_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const MAX_DISPLAY_NAME_LENGTH = 128;
 const MAX_SOURCE_DOMAIN_VALUE_LENGTH = 128;
@@ -176,7 +176,7 @@ function validateRegistry(
   }
   for (const [entryIndex, entry] of entries.entries()) {
     if (
-      !SOURCE_ASSET_ID_PATTERN.test(entry.sourceAssetId) || !API_ID_PATTERN.test(entry.apiId) ||
+      !SOURCE_ASSET_ID_PATTERN.test(entry.sourceAssetId) || !isPoolApiId(entry.apiId) ||
       !validDisplayName(entry.displayName) ||
       (entry.locationType !== 'indoor' && entry.locationType !== 'outdoor') ||
       (entry.webAppPoolId !== null && !WEB_APP_ID_PATTERN.test(entry.webAppPoolId))

@@ -47,6 +47,14 @@ Deno.test('rejects geometry and attributes outside the field allowlist', () => {
     ),
   };
   assertFailureCode(withEditorIdentity, 'unexpected_attribute');
+
+  const withRetiredPresentationField = {
+    ...validResponse,
+    features: validResponse.features.map((feature, index) =>
+      index === 0 ? { attributes: { ...feature.attributes, Name: 'Unused Source Name' } } : feature
+    ),
+  };
+  assertFailureCode(withRetiredPresentationField, 'unexpected_attribute');
 });
 
 Deno.test('rejects malformed, duplicate, unknown, and missing identities', () => {

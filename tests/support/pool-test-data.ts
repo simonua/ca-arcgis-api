@@ -54,9 +54,6 @@ export function sourceCollection(
     records: Object.freeze([
       record({
         assetId: 'ASSET_SYNTHETIC_1',
-        sourceName: 'Source Name One',
-        sourcePoolName: 'Source Pool One',
-        sourceLocation: 'Source Location One',
         sourceStatus: overrides.firstStatus ?? 'Open',
         attendance: 25,
         capacity: 100,
@@ -64,9 +61,6 @@ export function sourceCollection(
       }),
       record({
         assetId: 'ASSET_SYNTHETIC_2',
-        sourceName: 'Source Name Two',
-        sourcePoolName: 'Source Pool Two',
-        sourceLocation: 'Source Location Two',
         sourceStatus: 'Closed (Maintenance)',
         attendance: 0,
         capacity: 80,
@@ -83,9 +77,6 @@ export function accepted<T>(value: T): Readonly<{ state: 'accepted'; value: T }>
 function record(
   input: Readonly<{
     assetId: string;
-    sourceName: string;
-    sourcePoolName: string;
-    sourceLocation: string;
     sourceStatus: string;
     attendance: number;
     capacity: number;
@@ -94,9 +85,6 @@ function record(
 ): ArcGisSourceRecord {
   return Object.freeze({
     assetId: input.assetId,
-    sourceName: accepted(input.sourceName),
-    sourcePoolName: accepted(input.sourcePoolName),
-    sourceLocation: accepted(input.sourceLocation),
     sourceStatus: input.sourceStatus,
     sourceMaintenanceStatus: accepted('No Ongoing Maintenance'),
     sourceAttendance: accepted(input.attendance),

@@ -246,8 +246,7 @@ The ArcGIS client should build a fixed request from constants, not from caller i
 GET https://services8.arcgis.com/Qah4YRlnA96tI4X9/
     arcgis/rest/services/CA_Ammenities/FeatureServer/0/query
     ?where=1%3D1
-    &outFields=Name,AssetID,Pool_Name,pool_location,Status,Status2,
-               Pool_Attendance,Pool_Capacity,EditDate
+    &outFields=AssetID,Status,Status2,Pool_Attendance,Pool_Capacity,EditDate
     &returnGeometry=false
     &orderByFields=AssetID
     &f=json
@@ -256,7 +255,14 @@ GET https://services8.arcgis.com/Qah4YRlnA96tI4X9/
 Required behavior:
 
 - Use `GET`, HTTPS, a fixed hostname, a fixed service path, and a fixed `where=1=1` expression.
-- Request only the nine fields above. Do not request `Editor`, `Creator`, `Team_Member`, global IDs, object IDs, form links, attachments, schedules, descriptions, or geometry.
+- Request only the six fields above. Public identity, display name, and location type come from the
+  reviewed registry, so do not request the source presentation fields `Name`, `Pool_Name`, or
+  `pool_location`. This narrowing is based on the application-owned normalization contract and did
+  not require an additional live source request.
+- Keep `where=1=1` so complete-collection validation can detect unknown, missing, and duplicate
+  source identities. Do not filter to registry IDs upstream because that would hide source drift.
+- Do not request `Editor`, `Creator`, `Team_Member`, global IDs, object IDs, form links, attachments,
+  schedules, descriptions, or geometry.
 - Send `Accept: application/json` and a descriptive, stable `User-Agent` with a public contact URL if CA approves it.
 - Send the prior `ETag` in `If-None-Match` after confirming ArcGIS honors conditional query requests.
 - Treat `304 Not Modified` as a successful poll that advances `lastCheckedAt` but does not alter any pool's `reportedAt`.
