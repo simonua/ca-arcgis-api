@@ -4,9 +4,9 @@
 ArcGIS pool-status layer and approved consumers such as the
 [CNSL web app](https://github.com/simonua/cnsl).
 
-The repository contains the reviewed integration plan and the first offline harvester trust
-boundary. It does not yet contain a network client, scheduler, public API, container image, or Azure
-deployment.
+The repository contains the reviewed integration plan and the offline harvester trust boundary. It
+does not yet contain a scheduler, public API, container image, or Azure deployment, and routine
+development does not enable live ArcGIS access.
 
 ## Current Status
 
@@ -16,9 +16,10 @@ deployment.
   closely; see [repository alignment](docs/repository-alignment.md).
 - The runtime target is Deno 2 with strict TypeScript, native Web APIs, built-in formatting,
   linting, type checking, and testing.
-- The fixed ArcGIS collection URL, source-response validator, operating-window gate, monotonic
-  five-minute permit, and shared no-overlap source-operation lock are implemented and tested with
-  synthetic inputs; routine development performs no live source requests.
+- The fixed ArcGIS collection URL, strict runtime configuration parser, injected HTTP client,
+  source-response validator, operating-window gate, monotonic five-minute permit, and shared
+  no-overlap source-operation lock are implemented and tested with synthetic inputs. Polling is
+  disabled by default, and routine development performs no live source requests.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
