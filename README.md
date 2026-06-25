@@ -4,9 +4,10 @@
 ArcGIS pool-status layer and approved consumers such as the
 [CNSL web app](https://github.com/simonua/cnsl).
 
-The repository contains the reviewed integration plan and the offline harvester trust boundary. It
-does not yet contain runtime process composition, a public API, container image, or Azure
-deployment, and routine development does not enable live ArcGIS access.
+The repository contains the reviewed integration plan, offline harvester trust boundary, and an
+injected read-only HTTP runtime. It does not yet contain executable production composition, a
+published API, container image, or Azure deployment, and routine development does not enable live
+ArcGIS access.
 
 ## Current Status
 
@@ -14,7 +15,7 @@ deployment, and routine development does not enable live ArcGIS access.
   [the live pool status integration plan](docs/live-pool-status-integration-plan.md).
 - Repository conventions, agents, skills, editor settings, and validation follow `simonua/cnsl`
   closely; see [repository alignment](docs/repository-alignment.md).
-- The runtime target is Deno 2 with strict TypeScript, native Web APIs, built-in formatting,
+- The runtime target is Deno 2.9.0 with strict TypeScript, native Web APIs, built-in formatting,
   linting, type checking, and testing.
 - The fixed ArcGIS collection URL, strict runtime configuration parser, injected HTTP client,
   source-response validator, operating-window gate, monotonic five-minute permit, shared no-overlap
@@ -31,6 +32,12 @@ deployment, and routine development does not enable live ArcGIS access.
   least-recently-used eviction under injected entry and byte limits. The runner uses bounded startup
   jitter, separate wall and monotonic deadlines, long-wait chunking, and no catch-up polling. Polling
   is disabled by default, and routine development performs no live source requests.
+- The injected HTTP runtime serves normalized pool, single-pool, closure, health, readiness, and
+  generated OpenAPI routes without any request-to-source path. It enforces bounded request inputs,
+  exact filters, RFC 9457 errors, CORS allowlisting, strong conditional ETags, semantic cache
+  transitions, and bounded per-client quotas using ACA's trusted forwarding hop. Server startup and
+  scheduler shutdown ordering are independently tested. Swagger remains unavailable until reviewed,
+  integrity-verified assets are added.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
