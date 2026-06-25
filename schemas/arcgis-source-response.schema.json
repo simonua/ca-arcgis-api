@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.pools.longreachmarlins.org/schemas/arcgis-source-response.schema.json",
+  "title": "ArcGIS pool status source response",
+  "description": "Review artifact for the fixed ArcGIS response shape. Runtime identity and time checks remain authoritative.",
+  "type": "object",
+  "required": [
+    "features"
+  ],
+  "properties": {
+    "exceededTransferLimit": {
+      "type": "boolean",
+      "const": false
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/feature"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "feature": {
+      "type": "object",
+      "required": [
+        "attributes"
+      ],
+      "properties": {
+        "attributes": {
+          "$ref": "#/$defs/attributes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "attributes": {
+      "type": "object",
+      "required": [
+        "AssetID",
+        "Status",
+        "EditDate"
+      ],
+      "properties": {
+        "AssetID": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])?$"
+        },
+        "Status": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+        },
+        "Status2": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+        },
+        "Pool_Attendance": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "Pool_Capacity": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "EditDate": {
+          "type": "integer",
+          "minimum": 946684800000
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

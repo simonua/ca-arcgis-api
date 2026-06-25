@@ -27,6 +27,7 @@
       "schemas/",
       "src/",
       "tests/",
+      "tools/",
       "README.md",
       "deno.json"
     ]
@@ -34,7 +35,8 @@
   "lint": {
     "include": [
       "src/",
-      "tests/"
+      "tests/",
+      "tools/"
     ],
     "rules": {
       "tags": [
@@ -46,8 +48,10 @@
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
-    "check": "deno check src/index.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/arcgis-events.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts tests/collection-scheduler-runner.test.ts tests/pool-normalizer.test.ts tests/snapshot-store.test.ts tests/collection-snapshot-publisher.test.ts tests/semantic-freshness-projector.test.ts tests/api-representation-cache.test.ts tests/inbound-rate-limiter.test.ts tests/api-handler.test.ts tests/api-runtime.test.ts",
+    "check": "deno check src/index.ts tools/json-schema-artifacts.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/json-schema-contracts.test.ts tests/arcgis-events.test.ts tests/operational-metrics.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts tests/collection-scheduler-runner.test.ts tests/pool-normalizer.test.ts tests/snapshot-store.test.ts tests/collection-snapshot-publisher.test.ts tests/semantic-freshness-projector.test.ts tests/api-representation-cache.test.ts tests/inbound-rate-limiter.test.ts tests/api-handler.test.ts tests/api-runtime.test.ts",
+    "schemas:generate": "deno run --allow-write=schemas tools/json-schema-artifacts.ts write",
+    "schemas:check": "deno run --allow-read=schemas tools/json-schema-artifacts.ts check",
     "test": "deno test --no-prompt --parallel tests/",
-    "verify": "deno task fmt:check && deno task lint && deno task check && deno task test"
+    "verify": "deno task fmt:check && deno task lint && deno task check && deno task schemas:check && deno task test"
   }
 }

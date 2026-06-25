@@ -10,6 +10,11 @@ import {
   type InboundRateLimitOptions,
 } from '../http/inbound-rate-limiter.ts';
 import type { SnapshotStore } from '../snapshot/snapshot-store.ts';
+import {
+  createMetricsApiRepresentationCache,
+  createOperationalMetrics,
+  type OperationalMetrics,
+} from '../telemetry/operational-metrics.ts';
 import { type ApiRuntime, type ApiRuntimeServerFactory, createApiRuntime } from './api-runtime.ts';
 
 export interface ApiRuntimeCompositionOptions {
@@ -21,10 +26,13 @@ export interface ApiRuntimeCompositionOptions {
   readonly inboundRateLimit: InboundRateLimitOptions;
   readonly nowEpochMs: () => number;
   readonly nowMonotonicMs: () => number;
+  readonly metricsNowEpochMs?: () => number;
+  readonly metricsNowMonotonicMs?: () => number;
   readonly openApiEnabled: boolean;
   readonly swaggerDocument?: Uint8Array;
   readonly serverFactory: ApiRuntimeServerFactory;
   readonly schedulerRunner?: CollectionSchedulerRunner;
+  readonly metrics?: OperationalMetrics;
 }
 
 export type ApiRuntimeCompositionResult =
@@ -32,6 +40,7 @@ export type ApiRuntimeCompositionResult =
     ok: true;
     runtime: ApiRuntime;
     handler: ApiRequestHandler;
+    metrics: OperationalMetrics;
   }>
   | Readonly<{
     ok: false;
@@ -54,16 +63,25 @@ export function composeApiRuntime(
     return failure('invalid-rate-limit-config', limiterResult.error.code);
   }
 
+  const metrics = options.metrics ?? createOperationalMetrics();
+  const representationCache = createMetricsApiRepresentationCache(cacheResult.cache, metrics);
   const handler = createApiRequestHandler({
     snapshotStore: options.snapshotStore,
     freshnessProjector: options.freshnessProjector,
-    representationCache: cacheResult.cache,
+    representationCache,
     rateLimiter: limiterResult.limiter,
     knownPoolIds: options.knownPoolIds,
     allowedOrigins: options.allowedOrigins,
     nowEpochMs: options.nowEpochMs,
     nowMonotonicMs: options.nowMonotonicMs,
+    ...(options.metricsNowEpochMs === undefined
+      ? {}
+      : { metricsNowEpochMs: options.metricsNowEpochMs }),
+    ...(options.metricsNowMonotonicMs === undefined
+      ? {}
+      : { metricsNowMonotonicMs: options.metricsNowMonotonicMs }),
     openApiEnabled: options.openApiEnabled,
+    metrics,
     ...(options.swaggerDocument === undefined ? {} : { swaggerDocument: options.swaggerDocument }),
   });
   const runtime = createApiRuntime({
@@ -71,7 +89,7 @@ export function composeApiRuntime(
     serverFactory: options.serverFactory,
     ...(options.schedulerRunner === undefined ? {} : { schedulerRunner: options.schedulerRunner }),
   });
-  return Object.freeze({ ok: true, runtime, handler });
+  return Object.freeze({ ok: true, runtime, handler, metrics });
 }
 
 function failure(

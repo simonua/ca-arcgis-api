@@ -12,6 +12,11 @@ import type {
 } from '../freshness/semantic-freshness-projector.ts';
 import type { SnapshotStore } from '../snapshot/snapshot-store.ts';
 import {
+  type ApiMetricRoute,
+  isApiMetricStatus,
+  type OperationalMetrics,
+} from '../telemetry/operational-metrics.ts';
+import {
   createClosuresRepresentation,
   createPoolRepresentation,
   createPoolsRepresentation,
@@ -56,10 +61,13 @@ export interface ApiRequestHandlerOptions {
   readonly allowedOrigins: readonly string[];
   readonly nowEpochMs: () => number;
   readonly nowMonotonicMs: () => number;
+  readonly metricsNowEpochMs?: () => number;
+  readonly metricsNowMonotonicMs?: () => number;
   readonly openApiEnabled: boolean;
   readonly swaggerDocument?: Uint8Array;
   readonly maxUrlChars?: number;
   readonly maxHeaderBytes?: number;
+  readonly metrics?: OperationalMetrics;
 }
 
 /** Creates a read-only handler whose request path has no source-client dependency. */
@@ -70,8 +78,10 @@ export function createApiRequestHandler(options: ApiRequestHandlerOptions): ApiR
   let trackedGeneration: number | undefined;
   let semanticSignature: string | undefined;
   let semanticEpoch = 0;
+  const metricsNowEpochMs = options.metricsNowEpochMs ?? Date.now;
+  const metricsNowMonotonicMs = options.metricsNowMonotonicMs ?? (() => performance.now());
 
-  return async function handleRequest(
+  const handleRequest = async function handleRequest(
     request: Request,
     context: ApiRequestContext = {},
   ): Promise<Response> {
@@ -287,6 +297,42 @@ export function createApiRequestHandler(options: ApiRequestHandlerOptions): ApiR
     );
   };
 
+  if (options.metrics === undefined) {
+    return handleRequest;
+  }
+  return async function handleRequestWithMetrics(
+    request: Request,
+    context: ApiRequestContext = {},
+  ): Promise<Response> {
+    const route = metricRoute(request);
+    const startedAt = safeClock(metricsNowMonotonicMs);
+    const response = await handleRequest(request, context);
+    const completedAt = safeClock(metricsNowMonotonicMs);
+    if (isApiMetricStatus(response.status)) {
+      try {
+        options.metrics?.recordApiRequest(
+          route,
+          response.status,
+          startedAt === undefined || completedAt === undefined
+            ? 0
+            : Math.max(0, completedAt - startedAt) / 1_000,
+        );
+      } catch {
+        // Metrics never alter API responses.
+      }
+    }
+    try {
+      options.metrics?.observeRuntime(
+        options.snapshotStore,
+        options.representationCache,
+        metricsNowEpochMs(),
+      );
+    } catch {
+      // Metrics never alter API responses.
+    }
+    return response;
+  };
+
   function endpointEnabled(match: MatchedApiEndpoint): boolean {
     return (match.descriptor.id !== 'openApi' || options.openApiEnabled) &&
       (match.descriptor.id !== 'swagger' || options.swaggerDocument !== undefined);
@@ -307,6 +353,23 @@ export function createApiRequestHandler(options: ApiRequestHandlerOptions): ApiR
       semanticEpoch = semanticEpoch === Number.MAX_SAFE_INTEGER ? 0 : semanticEpoch + 1;
     }
     return semanticEpoch;
+  }
+}
+
+function metricRoute(request: Request): ApiMetricRoute {
+  try {
+    return matchApiEndpoint(new URL(request.url).pathname)?.descriptor.id ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+function safeClock(clock: () => number): number | undefined {
+  try {
+    const value = clock();
+    return Number.isFinite(value) ? value : undefined;
+  } catch {
+    return undefined;
   }
 }
 

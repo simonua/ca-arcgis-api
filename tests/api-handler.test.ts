@@ -2,6 +2,7 @@ import {
   type ApiRepresentationCache,
   createApiRepresentationCache,
 } from '../src/cache/api-representation-cache.ts';
+import { PUBLIC_API_BASE_URL } from '../src/config/api-config.ts';
 import {
   createSemanticFreshnessProjector,
   type SemanticFreshnessPolicy,
@@ -255,6 +256,17 @@ Deno.test('OpenAPI is deterministic, schema-bound, and matches the canonical HTT
     'ProblemDetails',
     'OpenApiDocument',
   ]);
+  assertEquals(
+    objectValue(schemas, 'ProblemDetails').example,
+    {
+      type: new URL('problems/invalid_filter', PUBLIC_API_BASE_URL).href,
+      title: 'Bad Request',
+      status: 400,
+      detail: 'A query filter is unknown or invalid.',
+      instance: '/v1/pools',
+      code: 'invalid_filter',
+    },
+  );
   const serializedContract = JSON.stringify(document).toLowerCase();
   for (
     const rawField of [
@@ -389,6 +401,7 @@ async function assertProblem(
   const body = await jsonObject(response);
   assertEquals(body.code, code);
   assertEquals(body.status, status);
+  assertEquals(body.type, new URL(`problems/${code}`, PUBLIC_API_BASE_URL).href);
 }
 
 async function jsonObject(response: Response): Promise<Record<string, unknown>> {

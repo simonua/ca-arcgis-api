@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.pools.longreachmarlins.org/schemas/pool-snapshot.schema.json",
+  "title": "Normalized immutable pool snapshot",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generation",
+    "lastCheckedAt",
+    "pools"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "lastCheckedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pools": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pool"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "pool": {
+      "type": "object",
+      "required": [
+        "id",
+        "displayName",
+        "locationType",
+        "webAppPoolId",
+        "operating",
+        "maintenance",
+        "capacity",
+        "sourceReportedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "locationType": {
+          "type": "string",
+          "enum": [
+            "indoor",
+            "outdoor"
+          ]
+        },
+        "webAppPoolId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+        },
+        "operating": {
+          "$ref": "#/$defs/operating"
+        },
+        "maintenance": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "state",
+                "value"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "const": "available"
+                },
+                "value": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "wading-pool",
+                      "spa",
+                      "slide",
+                      "splashpad",
+                      "non-pool-amenities",
+                      "main-pool"
+                    ]
+                  },
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "state"
+              ],
+              "properties": {
+                "state": {
+                  "type": "string",
+                  "const": "unavailable"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "capacity": {
+          "type": "object",
+          "required": [
+            "attendance",
+            "maximumCapacity",
+            "remainingCapacity",
+            "utilizationPercent"
+          ],
+          "properties": {
+            "attendance": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "value"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "available"
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "state"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "unavailable"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "maximumCapacity": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "value"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "available"
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "state"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "unavailable"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "remainingCapacity": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "value"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "available"
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "state"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "unavailable"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "utilizationPercent": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "state",
+                    "value"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "available"
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "state"
+                  ],
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "const": "unavailable"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "sourceReportedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "operating": {
+      "type": "object",
+      "required": [
+        "access",
+        "activity",
+        "closureKind",
+        "availableAreas"
+      ],
+      "properties": {
+        "access": {
+          "type": "string",
+          "enum": [
+            "open-public",
+            "restricted-program",
+            "partial",
+            "closed",
+            "unknown"
+          ]
+        },
+        "activity": {
+          "type": "string",
+          "enum": [
+            "rec-swim",
+            "adult-laps",
+            "swim-lessons",
+            "aqua-fit",
+            "senior-swim",
+            "special-event",
+            "none"
+          ]
+        },
+        "closureKind": {
+          "type": "string",
+          "enum": [
+            "inclement-weather",
+            "air-quality",
+            "maintenance",
+            "unplanned",
+            "off-hours",
+            "season",
+            "swim-team",
+            "summer-camp",
+            "private-event",
+            "none"
+          ]
+        },
+        "availableAreas": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "main-pool",
+              "baby-pool",
+              "program-pool"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

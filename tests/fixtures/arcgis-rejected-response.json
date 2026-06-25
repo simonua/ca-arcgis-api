@@ -1,0 +1,12 @@
+{
+  "features": [
+    {
+      "attributes": {
+        "AssetID": "TEST-001",
+        "Status": "Open",
+        "EditDate": 1782345600000
+      },
+      "unexpected": true
+    }
+  ]
+}

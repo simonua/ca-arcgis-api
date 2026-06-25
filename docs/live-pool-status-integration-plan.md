@@ -1054,10 +1054,22 @@ The highest-risk work is the source trust boundary, identity mapping, and freshn
 | 8. Production API launch | Deploy the signed digest to `api.pools.longreachmarlins.org` with managed TLS, CORS, monitoring, alerting, budget, and rollback | Operational owner accepts certificate, dashboards, alerts, runbook, request budget, and monthly cost envelope |
 | 9. Optional web-app integration | Add the separate browser consumer after API stability is proven | Focused unit, browser, accessibility, PWA, and performance evidence passes |
 
-The offline Phase 4 HTTP and generated OpenAPI contract are implemented. Its exit gate remains open
-until internal telemetry ownership is defined and a reviewed, pinned, checksum-verified Swagger UI
-distribution passes controlled enablement tests. Production discovery exposure remains a separate
-approval decision below.
+Phase 0 evidence must follow the
+[source approval evidence standard](source-approval-evidence.md). No Phase 0 evidence has been
+accepted, so all external decisions remain open.
+
+Phase 1 now has deterministic JSON Schema artifacts for the fixed source response, normalized
+snapshot, and public API responses, plus synthetic accepted, rejected, boundary, and hostile
+source fixtures. The explicit runtime validators remain authoritative. The phase exit gate remains
+open until the reviewed registry, semantic mappings, generated operating-window artifact, and
+authoritative representative evidence exist.
+
+The offline Phase 4 HTTP, generated OpenAPI contract, and private in-process operational metrics
+collector are implemented. Metrics use fixed route, operation, result, and status dimensions; they
+are not exposed through an HTTP route and do not emit per-sample logs. The phase exit gate remains
+open until a reviewed, pinned, checksum-verified Swagger UI distribution passes controlled
+enablement tests. Production discovery exposure and the `lean` or `full` exporter choice remain
+separate approval decisions below.
 
 ## Pre-Implementation Decisions
 

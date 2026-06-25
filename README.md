@@ -38,8 +38,13 @@ ArcGIS access.
   metadata to the same code-owned contract used by request validation. The runtime enforces bounded
   request inputs, exact filters, RFC 9457 errors, CORS allowlisting, strong conditional ETags,
   semantic cache transitions, and bounded per-client quotas using ACA's trusted forwarding hop.
-  Server startup and scheduler shutdown ordering are independently tested. Swagger remains
-  unavailable until reviewed, integrity-verified assets are added.
+  Server startup and scheduler shutdown ordering are independently tested. A private in-process
+  collector aggregates bounded source, cache, snapshot, and API metrics using fixed dimensions; it
+  has no public route and telemetry failures cannot alter source or request outcomes. Swagger
+  remains unavailable until reviewed, integrity-verified assets are added.
+- Deterministic JSON Schemas for the fixed ArcGIS response, normalized snapshot, and public API
+  responses are generated from code-owned contracts. Synthetic accepted, rejected, boundary, and
+  hostile fixtures exercise the explicit runtime source validator; schemas do not replace it.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
@@ -69,6 +74,8 @@ Install the Deno version pinned in [the CI workflow](.github/workflows/ci.yml), 
 | `deno task fmt:check` | Verify formatting |
 | `deno task lint` | Run the Deno linter |
 | `deno task check` | Type-check the service and tests |
+| `deno task schemas:generate` | Regenerate reviewable JSON Schema artifacts |
+| `deno task schemas:check` | Fail when generated schemas are missing or stale |
 | `deno task test` | Run deterministic tests with no ambient permissions |
 | `deno task verify` | Run the complete current repository gate |
 

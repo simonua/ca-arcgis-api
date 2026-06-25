@@ -1,4 +1,10 @@
 import { API_REPRESENTATION_FILTER_VALUES } from '../cache/api-representation-cache.ts';
+import {
+  POOL_ACTIVITY_VALUES,
+  POOL_AREAS,
+  POOL_MAINTENANCE_COMPONENTS,
+} from '../contracts/pool-snapshot.ts';
+import { PUBLIC_API_BASE_URL } from '../config/api-config.ts';
 
 export type DocumentedApiEndpointId =
   | 'listPools'
@@ -38,23 +44,12 @@ export const OPENAPI_COMPONENTS = Object.freeze({
       ['access', 'activity', 'closureKind', 'availableAreas'],
       {
         access: enumSchema(API_FILTER_VALUES.access, 'Normalized visitor access state.'),
-        activity: enumSchema(
-          [
-            'rec-swim',
-            'adult-laps',
-            'swim-lessons',
-            'aqua-fit',
-            'senior-swim',
-            'special-event',
-            'none',
-          ],
-          'Normalized current activity.',
-        ),
+        activity: enumSchema(POOL_ACTIVITY_VALUES, 'Normalized current activity.'),
         closureKind: enumSchema(API_FILTER_VALUES.closureKind, 'Normalized closure reason.'),
         availableAreas: Object.freeze({
           type: 'array',
           description: 'Normalized pool areas that remain available.',
-          items: enumSchema(['main-pool', 'baby-pool', 'program-pool']),
+          items: enumSchema(POOL_AREAS),
           uniqueItems: true,
         }),
       },
@@ -65,14 +60,7 @@ export const OPENAPI_COMPONENTS = Object.freeze({
         affectedComponents: Object.freeze({
           type: 'array',
           description: 'Normalized components affected by maintenance.',
-          items: enumSchema([
-            'wading-pool',
-            'spa',
-            'slide',
-            'splashpad',
-            'non-pool-amenities',
-            'main-pool',
-          ]),
+          items: enumSchema(POOL_MAINTENANCE_COMPONENTS),
           uniqueItems: true,
         }),
       },
@@ -194,7 +182,7 @@ export const OPENAPI_COMPONENTS = Object.freeze({
         nextSourceAccessAt: instant('Earliest known instant when source access may resume.'),
       },
       {
-        type: 'https://api.pools.longreachmarlins.org/problems/invalid_filter',
+        type: new URL('problems/invalid_filter', PUBLIC_API_BASE_URL).href,
         title: 'Bad Request',
         status: 400,
         detail: 'A query filter is unknown or invalid.',

@@ -1,3 +1,5 @@
+import { PUBLIC_API_BASE_URL } from '../config/api-config.ts';
+
 export type ApiProblemCode =
   | 'client_rate_limited'
   | 'internal_error'
@@ -69,7 +71,7 @@ export function createProblemResponse(options: ApiProblemOptions): Response {
   }
 
   const serialized = JSON.stringify({
-    type: `https://api.pools.longreachmarlins.org/problems/${options.code}`,
+    type: new URL(`problems/${options.code}`, PUBLIC_API_BASE_URL).href,
     title: definition.title,
     status: definition.status,
     detail: definition.detail,

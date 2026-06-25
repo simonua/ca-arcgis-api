@@ -1,0 +1,518 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.pools.longreachmarlins.org/schemas/public-api-responses.schema.json",
+  "title": "Public API response bodies",
+  "description": "The response schemas embedded in the generated OpenAPI contract.",
+  "oneOf": [
+    {
+      "$ref": "#/components/schemas/PoolsResponse"
+    },
+    {
+      "$ref": "#/components/schemas/PoolResponse"
+    },
+    {
+      "$ref": "#/components/schemas/ClosuresResponse"
+    },
+    {
+      "$ref": "#/components/schemas/HealthResponse"
+    },
+    {
+      "$ref": "#/components/schemas/ReadinessResponse"
+    },
+    {
+      "$ref": "#/components/schemas/ProblemDetails"
+    },
+    {
+      "$ref": "#/components/schemas/OpenApiDocument"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Snapshot": {
+        "type": "object",
+        "required": [
+          "lastCheckedAt",
+          "state",
+          "collectionState"
+        ],
+        "properties": {
+          "lastCheckedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time of the most recent completed source check."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "current",
+              "degraded",
+              "unavailable"
+            ],
+            "description": "Aggregate snapshot freshness."
+          },
+          "collectionState": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused-closed-hours"
+            ],
+            "description": "Current scheduler operating-window state."
+          },
+          "nextSourceAccessAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Earliest known instant when source access may resume."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "lastCheckedAt": "2026-06-25T15:05:00.000Z",
+          "state": "current",
+          "collectionState": "active"
+        }
+      },
+      "PoolOperating": {
+        "type": "object",
+        "required": [
+          "access",
+          "activity",
+          "closureKind",
+          "availableAreas"
+        ],
+        "properties": {
+          "access": {
+            "type": "string",
+            "enum": [
+              "open-public",
+              "restricted-program",
+              "partial",
+              "closed",
+              "unknown"
+            ],
+            "description": "Normalized visitor access state."
+          },
+          "activity": {
+            "type": "string",
+            "enum": [
+              "rec-swim",
+              "adult-laps",
+              "swim-lessons",
+              "aqua-fit",
+              "senior-swim",
+              "special-event",
+              "none"
+            ],
+            "description": "Normalized current activity."
+          },
+          "closureKind": {
+            "type": "string",
+            "enum": [
+              "inclement-weather",
+              "air-quality",
+              "maintenance",
+              "unplanned",
+              "off-hours",
+              "season",
+              "swim-team",
+              "summer-camp",
+              "private-event",
+              "none"
+            ],
+            "description": "Normalized closure reason."
+          },
+          "availableAreas": {
+            "type": "array",
+            "description": "Normalized pool areas that remain available.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "main-pool",
+                "baby-pool",
+                "program-pool"
+              ]
+            },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PoolMaintenance": {
+        "type": "object",
+        "required": [
+          "affectedComponents"
+        ],
+        "properties": {
+          "affectedComponents": {
+            "type": "array",
+            "description": "Normalized components affected by maintenance.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "wading-pool",
+                "spa",
+                "slide",
+                "splashpad",
+                "non-pool-amenities",
+                "main-pool"
+              ]
+            },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PoolOccupancy": {
+        "type": "object",
+        "required": [
+          "attendance",
+          "maximumCapacity",
+          "remainingCapacity",
+          "utilizationPercent"
+        ],
+        "properties": {
+          "attendance": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Current attendance when semantically current."
+          },
+          "maximumCapacity": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Accepted maximum capacity when available."
+          },
+          "remainingCapacity": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Derived remaining capacity when available."
+          },
+          "utilizationPercent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Derived utilization percentage when available."
+          }
+        },
+        "additionalProperties": false
+      },
+      "Pool": {
+        "type": "object",
+        "required": [
+          "id",
+          "webAppPoolId",
+          "name",
+          "locationType",
+          "dataState",
+          "reportedAt",
+          "operating",
+          "maintenance",
+          "occupancy"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Lowercase application-owned pool identifier.",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+          },
+          "webAppPoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Approved identifier used by the consuming web application."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locationType": {
+            "type": "string",
+            "enum": [
+              "indoor",
+              "outdoor"
+            ]
+          },
+          "dataState": {
+            "type": "string",
+            "enum": [
+              "current",
+              "degraded",
+              "unavailable"
+            ]
+          },
+          "reportedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time represented by the source record, not the collection time."
+          },
+          "operating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoolOperating"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PoolMaintenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "occupancy": {
+            "$ref": "#/components/schemas/PoolOccupancy"
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "id": "river-hill",
+          "webAppPoolId": "rh",
+          "name": "River Hill Pool",
+          "locationType": "outdoor",
+          "dataState": "current",
+          "reportedAt": "2026-06-25T15:02:18.757Z",
+          "operating": {
+            "access": "open-public",
+            "activity": "rec-swim",
+            "closureKind": "none",
+            "availableAreas": []
+          },
+          "maintenance": {
+            "affectedComponents": []
+          },
+          "occupancy": {
+            "attendance": 120,
+            "maximumCapacity": 384,
+            "remainingCapacity": 264,
+            "utilizationPercent": 31.25
+          }
+        }
+      },
+      "PoolsResponse": {
+        "type": "object",
+        "required": [
+          "apiVersion",
+          "snapshot",
+          "pools"
+        ],
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
+          "pools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pool"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PoolResponse": {
+        "type": "object",
+        "required": [
+          "apiVersion",
+          "snapshot",
+          "pool"
+        ],
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
+          "pool": {
+            "$ref": "#/components/schemas/Pool"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ClosuresResponse": {
+        "type": "object",
+        "required": [
+          "apiVersion",
+          "snapshot",
+          "closures"
+        ],
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/Snapshot"
+          },
+          "closures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Pool"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "live"
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "status": "live"
+        }
+      },
+      "ReadinessResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "snapshotState",
+          "collectionState",
+          "lastCheckedAt"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "degraded"
+            ]
+          },
+          "snapshotState": {
+            "type": "string",
+            "enum": [
+              "current",
+              "degraded",
+              "unavailable"
+            ]
+          },
+          "collectionState": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused-closed-hours"
+            ]
+          },
+          "lastCheckedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time of the most recent completed source check."
+          },
+          "nextSourceAccessAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Earliest known instant when source access may resume."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "status": "degraded",
+          "snapshotState": "degraded",
+          "collectionState": "paused-closed-hours",
+          "lastCheckedAt": "2026-06-25T15:05:00.000Z",
+          "nextSourceAccessAt": "2026-06-26T10:00:00.000Z"
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instance": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "client_rate_limited",
+              "internal_error",
+              "invalid_filter",
+              "invalid_request",
+              "method_not_allowed",
+              "not_acceptable",
+              "pool_not_found",
+              "route_not_found",
+              "snapshot_unavailable",
+              "unsupported_media_type"
+            ]
+          },
+          "nextSourceAccessAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Earliest known instant when source access may resume."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "type": "https://api.pools.longreachmarlins.org/problems/invalid_filter",
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "A query filter is unknown or invalid.",
+          "instance": "/v1/pools",
+          "code": "invalid_filter"
+        }
+      },
+      "OpenApiDocument": {
+        "type": "object",
+        "description": "The deterministic OpenAPI 3.1 discovery document.",
+        "required": [
+          "openapi",
+          "info",
+          "paths"
+        ],
+        "additionalProperties": true
+      }
+    }
+  }
+}

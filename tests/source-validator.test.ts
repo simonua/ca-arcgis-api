@@ -1,4 +1,7 @@
 import validResponse from './fixtures/arcgis-valid-response.json' with { type: 'json' };
+import boundaryResponse from './fixtures/arcgis-boundary-response.json' with { type: 'json' };
+import hostileResponse from './fixtures/arcgis-hostile-response.json' with { type: 'json' };
+import rejectedResponse from './fixtures/arcgis-rejected-response.json' with { type: 'json' };
 import { validateArcGisSourceResponse } from '../src/harvesting/source-validator.ts';
 
 const EXPECTED_ASSET_IDS = new Set(['TEST-001', 'TEST-002']);
@@ -96,6 +99,36 @@ Deno.test('marks an invalid optional field unavailable without rejecting the col
   if (first.sourceAttendance.state === 'unavailable') {
     assertEquals(first.sourceAttendance.reason, 'invalid-type');
   }
+});
+
+Deno.test('accepts exact source string, identity, and timestamp boundaries', () => {
+  const assetId = boundaryResponse.features[0]?.attributes.AssetID;
+  assert(assetId !== undefined);
+  assertEquals(assetId.length, 64);
+  assertEquals(boundaryResponse.features[0]?.attributes.Status.length, 128);
+  const result = validateArcGisSourceResponse(boundaryResponse, {
+    expectedAssetIds: new Set([assetId]),
+    nowEpochMs: NOW_EPOCH_MS,
+  });
+
+  assert(result.ok, result.ok ? '' : result.error.code);
+});
+
+Deno.test('rejects reviewed negative and hostile source fixtures without retaining payload data', () => {
+  const rejected = validateArcGisSourceResponse(rejectedResponse, {
+    expectedAssetIds: new Set(['TEST-001']),
+    nowEpochMs: NOW_EPOCH_MS,
+  });
+  assert(!rejected.ok);
+  assertEquals(rejected.error.code, 'invalid_feature');
+
+  const hostile = validateArcGisSourceResponse(hostileResponse, {
+    expectedAssetIds: new Set(['TEST-001']),
+    nowEpochMs: NOW_EPOCH_MS,
+  });
+  assert(!hostile.ok);
+  assertEquals(hostile.error.code, 'invalid_asset_id');
+  assertEquals(JSON.stringify(hostile).includes('../unsafe'), false);
 });
 
 function validate(input: unknown) {

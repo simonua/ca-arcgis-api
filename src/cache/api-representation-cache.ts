@@ -1,5 +1,12 @@
 import { isPoolApiId } from '../contracts/pool-identity.ts';
-import type { PoolAccess, PoolClosureKind, PoolLocationType } from '../contracts/pool-snapshot.ts';
+import {
+  POOL_ACCESS_VALUES,
+  POOL_CLOSURE_KINDS,
+  POOL_LOCATION_TYPES,
+  type PoolAccess,
+  type PoolClosureKind,
+  type PoolLocationType,
+} from '../contracts/pool-snapshot.ts';
 import type { FreshnessState } from '../freshness/semantic-freshness-projector.ts';
 
 export type ApiRepresentationRoute = 'pools' | 'pool' | 'closures';
@@ -12,30 +19,9 @@ export interface ApiRepresentationFilters {
 }
 
 export const API_REPRESENTATION_FILTER_VALUES = Object.freeze({
-  locationType: Object.freeze(['indoor', 'outdoor'] satisfies readonly PoolLocationType[]),
-  access: Object.freeze(
-    [
-      'open-public',
-      'restricted-program',
-      'partial',
-      'closed',
-      'unknown',
-    ] satisfies readonly PoolAccess[],
-  ),
-  closureKind: Object.freeze(
-    [
-      'inclement-weather',
-      'air-quality',
-      'maintenance',
-      'unplanned',
-      'off-hours',
-      'season',
-      'swim-team',
-      'summer-camp',
-      'private-event',
-      'none',
-    ] satisfies readonly PoolClosureKind[],
-  ),
+  locationType: POOL_LOCATION_TYPES,
+  access: POOL_ACCESS_VALUES,
+  closureKind: POOL_CLOSURE_KINDS,
   dataState: Object.freeze(
     [
       'current',

@@ -4,6 +4,7 @@ import type { ApiRequestHandler } from '../src/http/api-handler.ts';
 import { createSnapshotStore } from '../src/snapshot/snapshot-store.ts';
 import { composeApiRuntime } from '../src/runtime/api-runtime-composition.ts';
 import { type ApiRuntimeServerFactory, createApiRuntime } from '../src/runtime/api-runtime.ts';
+import type { OperationalMetrics } from '../src/telemetry/operational-metrics.ts';
 
 Deno.test('API runtime starts server before scheduler and stops scheduler before drain', async () => {
   const events: string[] = [];
@@ -86,6 +87,76 @@ Deno.test('API runtime composition assembles a permission-free liveness path', a
   assertEquals(events.join(','), 'server-start,server-shutdown');
 });
 
+Deno.test('API runtime aggregates normalized request metrics without exposing a metrics route', async () => {
+  const composed = composeApiRuntime(compositionOptions());
+  assert(composed.ok);
+
+  const privatePath = '/v1/pools/private-pool?sourceUrl=https://unsafe.example';
+  const privateResponse = await composed.handler(
+    new Request(`https://api.example.test${privatePath}`),
+    { remoteAddress: '192.0.2.44' },
+  );
+  const metricsResponse = await composed.handler(
+    new Request('https://api.example.test/metrics'),
+    { remoteAddress: '192.0.2.44' },
+  );
+
+  assertEquals(privateResponse.status, 400);
+  assertEquals(metricsResponse.status, 404);
+  const serialized = JSON.stringify(composed.metrics.snapshot());
+  assert(serialized.includes('getPool'));
+  assert(serialized.includes('unknown'));
+  for (const forbidden of ['private-pool', 'sourceUrl', 'unsafe.example', '192.0.2.44']) {
+    assertEquals(serialized.includes(forbidden), false);
+  }
+});
+
+Deno.test('API metric failures cannot alter request outcomes', async () => {
+  const options = compositionOptions();
+  const composed = composeApiRuntime({ ...options, metrics: throwingMetrics() });
+  assert(composed.ok);
+
+  const response = await composed.handler(new Request('https://api.example.test/healthz'));
+
+  assertEquals(response.status, 200);
+});
+
+Deno.test('API metrics do not consume request decision clocks', async () => {
+  let controlEpochReads = 0;
+  let controlMonotonicReads = 0;
+  let metricEpochReads = 0;
+  let metricMonotonicReads = 0;
+  const options = compositionOptions();
+  const composed = composeApiRuntime({
+    ...options,
+    nowEpochMs: () => {
+      controlEpochReads += 1;
+      return 0;
+    },
+    nowMonotonicMs: () => {
+      controlMonotonicReads += 1;
+      return 0;
+    },
+    metricsNowEpochMs: () => {
+      metricEpochReads += 1;
+      return 0;
+    },
+    metricsNowMonotonicMs: () => {
+      metricMonotonicReads += 1;
+      return 0;
+    },
+  });
+  assert(composed.ok);
+
+  const response = await composed.handler(new Request('https://api.example.test/v1/pools'));
+
+  assertEquals(response.status, 503);
+  assertEquals(controlEpochReads, 1);
+  assertEquals(controlMonotonicReads, 1);
+  assertEquals(metricEpochReads, 1);
+  assertEquals(metricMonotonicReads, 2);
+});
+
 const noOpHandler: ApiRequestHandler = () => Promise.resolve(new Response(null, { status: 204 }));
 
 const unavailableProjector: SemanticFreshnessProjector = Object.freeze({
@@ -149,6 +220,19 @@ function scheduler(events: string[]): CollectionSchedulerRunner {
     stop(): void {
       events.push('scheduler-stop');
     },
+  });
+}
+
+function throwingMetrics(): OperationalMetrics {
+  const fail = (): never => {
+    throw new Error('synthetic metric failure');
+  };
+  return Object.freeze({
+    recordArcGisAttempt: fail,
+    recordApiRequest: fail,
+    recordCacheResult: fail,
+    observeRuntime: fail,
+    snapshot: fail,
   });
 }
 

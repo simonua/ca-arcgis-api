@@ -3,18 +3,24 @@ import type {
   ArcGisSourceRecord,
   SourceField,
 } from '../contracts/arcgis-source.ts';
-import type {
-  PoolAccess,
-  PoolActivity,
-  PoolArea,
-  PoolCapacityState,
-  PoolClosureKind,
-  PoolDatum,
-  PoolLocationType,
-  PoolMaintenanceComponent,
-  PoolOperatingState,
-  PoolSnapshotCandidate,
-  PoolSnapshotRecord,
+import {
+  POOL_ACCESS_VALUES,
+  POOL_ACTIVITY_VALUES,
+  POOL_AREAS,
+  POOL_CLOSURE_KINDS,
+  POOL_LOCATION_TYPES,
+  POOL_MAINTENANCE_COMPONENTS,
+  type PoolAccess,
+  type PoolActivity,
+  type PoolArea,
+  type PoolCapacityState,
+  type PoolClosureKind,
+  type PoolDatum,
+  type PoolLocationType,
+  type PoolMaintenanceComponent,
+  type PoolOperatingState,
+  type PoolSnapshotCandidate,
+  type PoolSnapshotRecord,
 } from '../contracts/pool-snapshot.ts';
 import { isPoolApiId } from '../contracts/pool-identity.ts';
 
@@ -178,7 +184,7 @@ function validateRegistry(
     if (
       !SOURCE_ASSET_ID_PATTERN.test(entry.sourceAssetId) || !isPoolApiId(entry.apiId) ||
       !validDisplayName(entry.displayName) ||
-      (entry.locationType !== 'indoor' && entry.locationType !== 'outdoor') ||
+      !LOCATION_TYPES.has(entry.locationType) ||
       (entry.webAppPoolId !== null && !WEB_APP_ID_PATTERN.test(entry.webAppPoolId))
     ) {
       return configurationFailure('invalid-registry-entry', entryIndex);
@@ -234,47 +240,14 @@ function validateMaintenanceRules(
   return Object.freeze({ ok: true });
 }
 
-const ACCESS_VALUES: ReadonlySet<PoolAccess> = new Set([
-  'open-public',
-  'restricted-program',
-  'partial',
-  'closed',
-  'unknown',
-]);
-const ACTIVITY_VALUES: ReadonlySet<PoolActivity> = new Set([
-  'rec-swim',
-  'adult-laps',
-  'swim-lessons',
-  'aqua-fit',
-  'senior-swim',
-  'special-event',
-  'none',
-]);
-const CLOSURE_VALUES: ReadonlySet<PoolClosureKind> = new Set([
-  'inclement-weather',
-  'air-quality',
-  'maintenance',
-  'unplanned',
-  'off-hours',
-  'season',
-  'swim-team',
-  'summer-camp',
-  'private-event',
-  'none',
-]);
-const AREA_VALUES: ReadonlySet<PoolArea> = new Set([
-  'main-pool',
-  'baby-pool',
-  'program-pool',
-]);
-const MAINTENANCE_COMPONENTS: ReadonlySet<PoolMaintenanceComponent> = new Set([
-  'wading-pool',
-  'spa',
-  'slide',
-  'splashpad',
-  'non-pool-amenities',
-  'main-pool',
-]);
+const LOCATION_TYPES: ReadonlySet<PoolLocationType> = new Set(POOL_LOCATION_TYPES);
+const ACCESS_VALUES: ReadonlySet<PoolAccess> = new Set(POOL_ACCESS_VALUES);
+const ACTIVITY_VALUES: ReadonlySet<PoolActivity> = new Set(POOL_ACTIVITY_VALUES);
+const CLOSURE_VALUES: ReadonlySet<PoolClosureKind> = new Set(POOL_CLOSURE_KINDS);
+const AREA_VALUES: ReadonlySet<PoolArea> = new Set(POOL_AREAS);
+const MAINTENANCE_COMPONENTS: ReadonlySet<PoolMaintenanceComponent> = new Set(
+  POOL_MAINTENANCE_COMPONENTS,
+);
 
 function validOperatingState(rule: PoolStatusRule): boolean {
   const validAreas = new Set(rule.availableAreas).size === rule.availableAreas.length &&

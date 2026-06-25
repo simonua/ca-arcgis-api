@@ -1,44 +1,58 @@
 export const POOL_SNAPSHOT_SCHEMA_VERSION = '1.0.0' as const;
 
-export type PoolLocationType = 'indoor' | 'outdoor';
+export const POOL_LOCATION_TYPES = Object.freeze(['indoor', 'outdoor'] as const);
+export const POOL_ACCESS_VALUES = Object.freeze(
+  [
+    'open-public',
+    'restricted-program',
+    'partial',
+    'closed',
+    'unknown',
+  ] as const,
+);
+export const POOL_ACTIVITY_VALUES = Object.freeze(
+  [
+    'rec-swim',
+    'adult-laps',
+    'swim-lessons',
+    'aqua-fit',
+    'senior-swim',
+    'special-event',
+    'none',
+  ] as const,
+);
+export const POOL_CLOSURE_KINDS = Object.freeze(
+  [
+    'inclement-weather',
+    'air-quality',
+    'maintenance',
+    'unplanned',
+    'off-hours',
+    'season',
+    'swim-team',
+    'summer-camp',
+    'private-event',
+    'none',
+  ] as const,
+);
+export const POOL_AREAS = Object.freeze(['main-pool', 'baby-pool', 'program-pool'] as const);
+export const POOL_MAINTENANCE_COMPONENTS = Object.freeze(
+  [
+    'wading-pool',
+    'spa',
+    'slide',
+    'splashpad',
+    'non-pool-amenities',
+    'main-pool',
+  ] as const,
+);
 
-export type PoolAccess =
-  | 'open-public'
-  | 'restricted-program'
-  | 'partial'
-  | 'closed'
-  | 'unknown';
-
-export type PoolActivity =
-  | 'rec-swim'
-  | 'adult-laps'
-  | 'swim-lessons'
-  | 'aqua-fit'
-  | 'senior-swim'
-  | 'special-event'
-  | 'none';
-
-export type PoolClosureKind =
-  | 'inclement-weather'
-  | 'air-quality'
-  | 'maintenance'
-  | 'unplanned'
-  | 'off-hours'
-  | 'season'
-  | 'swim-team'
-  | 'summer-camp'
-  | 'private-event'
-  | 'none';
-
-export type PoolArea = 'main-pool' | 'baby-pool' | 'program-pool';
-
-export type PoolMaintenanceComponent =
-  | 'wading-pool'
-  | 'spa'
-  | 'slide'
-  | 'splashpad'
-  | 'non-pool-amenities'
-  | 'main-pool';
+export type PoolLocationType = (typeof POOL_LOCATION_TYPES)[number];
+export type PoolAccess = (typeof POOL_ACCESS_VALUES)[number];
+export type PoolActivity = (typeof POOL_ACTIVITY_VALUES)[number];
+export type PoolClosureKind = (typeof POOL_CLOSURE_KINDS)[number];
+export type PoolArea = (typeof POOL_AREAS)[number];
+export type PoolMaintenanceComponent = (typeof POOL_MAINTENANCE_COMPONENTS)[number];
 
 export type PoolDatum<T> =
   | Readonly<{ state: 'available'; value: T }>
