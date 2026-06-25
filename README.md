@@ -23,7 +23,10 @@ deployment, and routine development does not enable live ArcGIS access.
   normalization boundary now maps validated records through injected registry and domain policy to
   one immutable, consumer-owned in-memory snapshot. Source presentation fields and validators are
   not retained in that snapshot, failed publication leaves the prior snapshot untouched, and a `304`
-  advances only harvester freshness. The runner uses bounded startup jitter, separate wall and
+  advances only harvester freshness. A pure semantic projection now applies injected, validated
+  snapshot, attendance, and status freshness policy; reports closed-hours collection state; hides
+  expired values without mutating retained data; and exposes exact transition instants for future
+  representation-cache invalidation. The runner uses bounded startup jitter, separate wall and
   monotonic deadlines, long-wait chunking, and no catch-up polling. Polling is disabled by default,
   and routine development performs no live source requests.
 - Production infrastructure will be Bicep-only when deployment is authorized.
