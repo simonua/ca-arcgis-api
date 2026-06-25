@@ -8,6 +8,7 @@ export type DailyAttemptBudgetDecision =
     dateKey?: string;
     attempts?: number;
     ceiling?: number;
+    nextResetAtEpochMs?: number;
   }>;
 
 export interface DailyAttemptBudget {
@@ -62,12 +63,14 @@ export function createDailyAttemptBudget(options: DailyAttemptBudgetOptions): Da
     }
     const currentAttempts = attempts.get(dateKey) ?? 0;
     if (currentAttempts >= ceiling) {
+      const nextResetAtEpochMs = findNextResetAt(nowEpochMs, dateKey);
       return Object.freeze({
         allowed: false,
         reason: 'ceiling-reached',
         dateKey,
         attempts: currentAttempts,
         ceiling,
+        ...(nextResetAtEpochMs === undefined ? {} : { nextResetAtEpochMs }),
       });
     }
     const nextAttempts = consume ? currentAttempts + 1 : currentAttempts;
@@ -75,6 +78,22 @@ export function createDailyAttemptBudget(options: DailyAttemptBudgetOptions): Da
       attempts.set(dateKey, nextAttempts);
     }
     return Object.freeze({ allowed: true, dateKey, attempts: nextAttempts, ceiling });
+  }
+
+  function findNextResetAt(nowEpochMs: number, currentDateKey: string): number | undefined {
+    for (const window of options.sourceWindows) {
+      if (window.startsAtEpochMs <= nowEpochMs) {
+        continue;
+      }
+      const windowDateKey = options.easternDateKey(window.startsAtEpochMs);
+      if (
+        windowDateKey !== undefined && isDateKey(windowDateKey) &&
+        windowDateKey !== currentDateKey
+      ) {
+        return window.startsAtEpochMs;
+      }
+    }
+    return undefined;
   }
 }
 

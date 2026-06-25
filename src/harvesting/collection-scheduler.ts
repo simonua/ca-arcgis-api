@@ -59,7 +59,7 @@ export interface CollectionSchedulerDependencies {
 
 type BudgetedSendResult =
   | Readonly<{ attempted: true; result: ArcGisCollectionResult }>
-  | Readonly<{ attempted: false }>;
+  | Readonly<{ attempted: false; nextResetAtEpochMs?: number }>;
 
 /** Coordinates one completion-based collection cycle without timers or hidden retries. */
 export function createCollectionScheduler(
@@ -84,7 +84,10 @@ export function createCollectionScheduler(
 
       const budget = dependencies.dailyAttemptBudget.check(nowEpochMs);
       if (!budget.allowed) {
-        return deferred(budget.reason === 'invalid-time' ? 'invalid-time' : 'daily-ceiling');
+        return deferred(
+          budget.reason === 'invalid-time' ? 'invalid-time' : 'daily-ceiling',
+          budget.nextResetAtEpochMs,
+        );
       }
 
       const acquired = dependencies.resiliencePolicy.acquire(
@@ -111,7 +114,12 @@ export function createCollectionScheduler(
             dependencies.clock.nowEpochMs(),
           );
           if (!consumed.allowed) {
-            return Object.freeze({ attempted: false });
+            return Object.freeze({
+              attempted: false,
+              ...(consumed.nextResetAtEpochMs === undefined
+                ? {}
+                : { nextResetAtEpochMs: consumed.nextResetAtEpochMs }),
+            });
           }
           return Object.freeze({
             attempted: true,
@@ -132,7 +140,7 @@ export function createCollectionScheduler(
           acquired.mode,
           dependencies.clock.nowMonotonicMs(),
         );
-        return deferred('daily-ceiling');
+        return deferred('daily-ceiling', sendResult.value.nextResetAtEpochMs);
       }
 
       const schedule = dependencies.resiliencePolicy.record(

@@ -4,14 +4,15 @@ Audited: 2026-06-25
 
 ## Scope
 
-Initial repository scaffolding, customization ownership, Deno validation, and CNSL alignment were
-reviewed. The service implementation has not begun.
+Repository scaffolding, customization ownership, Deno validation, CNSL alignment, and the offline
+harvester scheduling boundary were reviewed. Runtime process composition, snapshot ownership, the
+read-only HTTP API, container packaging, and Azure infrastructure are not yet implemented.
 
 ## Active Recommendations
 
-There are no active refactoring recommendations. Implementation work must continue to satisfy the
-proposal gates and repository guardrails rather than treating this empty-state plan as authorization
-to build or deploy the service.
+There are no active refactoring recommendations. Remaining implementation work must continue to
+satisfy the proposal gates and repository guardrails rather than treating this empty-state plan as
+authorization for live source access or deployment.
 
 ## Guardrails
 

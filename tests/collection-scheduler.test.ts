@@ -117,6 +117,27 @@ Deno.test('daily attempt budget derives and retains ceilings by Eastern date', (
   assertEquals(denied.reason, 'ceiling-reached');
 });
 
+Deno.test('daily attempt budget exposes the first configured reset on a later Eastern date', () => {
+  const budget = createDailyAttemptBudget({
+    sourceWindows: [
+      { startsAtEpochMs: 0, endsAtEpochMs: MIN_COLLECTION_INTERVAL_MS },
+      { startsAtEpochMs: 400_000, endsAtEpochMs: 700_000 },
+      { startsAtEpochMs: 800_000, endsAtEpochMs: 1_100_000 },
+    ],
+    minimumIntervalMs: MIN_COLLECTION_INTERVAL_MS,
+    easternDateKey: (epochMs) => epochMs < 800_000 ? DATE_KEY : '2026-06-25',
+  });
+  const first = budget.consume(1);
+  const second = budget.consume(400_001);
+  assert(first.allowed && second.allowed, 'Expected both current-date attempts');
+
+  const denied = budget.check(400_002);
+
+  assert(!denied.allowed, 'Expected current Eastern date ceiling');
+  assertEquals(denied.reason, 'ceiling-reached');
+  assertEquals(denied.nextResetAtEpochMs, 800_000);
+});
+
 interface ContextOptions {
   readonly pollEnabled?: boolean;
   readonly emergencyDisabled?: boolean;

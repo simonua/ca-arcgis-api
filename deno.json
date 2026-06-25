@@ -46,7 +46,7 @@
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
-    "check": "deno check src/index.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/arcgis-events.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts",
+    "check": "deno check src/index.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/arcgis-events.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts tests/collection-scheduler-runner.test.ts",
     "test": "deno test --no-prompt --parallel tests/",
     "verify": "deno task fmt:check && deno task lint && deno task check && deno task test"
   }
