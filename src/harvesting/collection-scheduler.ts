@@ -9,6 +9,7 @@ import type {
   CollectionResilienceSchedule,
 } from './collection-resilience.ts';
 import type { OperatingWindowGate } from './operating-window-gate.ts';
+import type { CollectionSnapshotPublisher } from '../snapshot/collection-snapshot-publisher.ts';
 import {
   executeGatedSourceSend,
   type SourceSendDeniedReason,
@@ -55,6 +56,7 @@ export interface CollectionSchedulerDependencies {
   readonly dailyAttemptBudget: DailyAttemptBudget;
   readonly resiliencePolicy: CollectionResiliencePolicy;
   readonly client: ArcGisClient;
+  readonly snapshotPublisher: CollectionSnapshotPublisher;
 }
 
 type BudgetedSendResult =
@@ -66,7 +68,7 @@ export function createCollectionScheduler(
   dependencies: CollectionSchedulerDependencies,
 ): CollectionScheduler {
   return Object.freeze({
-    async runCycle(request: ArcGisCollectionRequest = {}): Promise<CollectionCycleResult> {
+    async runCycle(request?: ArcGisCollectionRequest): Promise<CollectionCycleResult> {
       const nowEpochMs = dependencies.clock.nowEpochMs();
       const window = dependencies.operatingWindowGate.evaluate(nowEpochMs);
       if (!window.allowed) {
@@ -123,7 +125,9 @@ export function createCollectionScheduler(
           }
           return Object.freeze({
             attempted: true,
-            result: await dependencies.client.collect(request),
+            result: await dependencies.client.collect(
+              request ?? collectionRequest(dependencies.snapshotPublisher.sourceEtag()),
+            ),
           });
         },
       );
@@ -143,19 +147,31 @@ export function createCollectionScheduler(
         return deferred('daily-ceiling', sendResult.value.nextResetAtEpochMs);
       }
 
+      const checkedAtEpochMs = dependencies.clock.nowEpochMs();
+      const publication = dependencies.snapshotPublisher.apply(
+        sendResult.value.result,
+        checkedAtEpochMs,
+      );
+      const effectiveResult: ArcGisCollectionResult = publication.ok
+        ? sendResult.value.result
+        : Object.freeze({ ok: false, failureClass: 'validation' });
       const schedule = dependencies.resiliencePolicy.record(
         acquired.mode,
-        sendResult.value.result,
-        dependencies.clock.nowEpochMs(),
+        effectiveResult,
+        checkedAtEpochMs,
         dependencies.clock.nowMonotonicMs(),
       );
       return Object.freeze({
         status: 'attempted',
-        result: sendResult.value.result,
+        result: effectiveResult,
         schedule,
       });
     },
   });
+}
+
+function collectionRequest(etag: string | undefined): ArcGisCollectionRequest {
+  return etag === undefined ? Object.freeze({}) : Object.freeze({ etag });
 }
 
 function mapSourceDenial(

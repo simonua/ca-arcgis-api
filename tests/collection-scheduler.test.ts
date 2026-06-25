@@ -1,4 +1,8 @@
-import type { ArcGisClient, ArcGisCollectionResult } from '../src/harvesting/arcgis-client.ts';
+import type {
+  ArcGisClient,
+  ArcGisCollectionRequest,
+  ArcGisCollectionResult,
+} from '../src/harvesting/arcgis-client.ts';
 import {
   type CollectionResiliencePolicy,
   createCollectionResiliencePolicy,
@@ -17,6 +21,7 @@ import {
   createSourceOperationLock,
   type SourceGateClock,
 } from '../src/harvesting/source-send-gate.ts';
+import type { CollectionSnapshotPublisher } from '../src/snapshot/collection-snapshot-publisher.ts';
 
 const WINDOW_START = 1_000_000;
 const WINDOW_END = 3_000_000;
@@ -95,6 +100,30 @@ Deno.test('collection scheduler observes an open circuit without source send', a
   assertEquals(context.sendCount(), 0);
 });
 
+Deno.test('collection scheduler treats publication rejection as validation failure', async () => {
+  const clock = new FakeClock(WINDOW_START, 0);
+  const snapshotPublisher: CollectionSnapshotPublisher = Object.freeze({
+    apply: () =>
+      Object.freeze({
+        ok: false,
+        error: Object.freeze({ code: 'no-snapshot' }),
+      }),
+    sourceEtag: () => '"accepted-v1"',
+  });
+  const context = createContext(clock, [notModified()], { snapshotPublisher });
+
+  const result = await context.scheduler.runCycle();
+
+  assertEquals(result.status, 'attempted');
+  if (result.status === 'attempted') {
+    assert(!result.result.ok, 'Expected rejected publication to fail the cycle');
+    if (!result.result.ok) {
+      assertEquals(result.result.failureClass, 'validation');
+    }
+  }
+  assertEquals(context.requests()[0]?.etag, '"accepted-v1"');
+});
+
 Deno.test('daily attempt budget derives and retains ceilings by Eastern date', () => {
   const windows: readonly SourceAccessWindow[] = [
     { startsAtEpochMs: 0, endsAtEpochMs: 600_000 },
@@ -142,6 +171,7 @@ interface ContextOptions {
   readonly pollEnabled?: boolean;
   readonly emergencyDisabled?: boolean;
   readonly resiliencePolicy?: CollectionResiliencePolicy;
+  readonly snapshotPublisher?: CollectionSnapshotPublisher;
 }
 
 function createContext(
@@ -160,13 +190,15 @@ function createContext(
   }
 
   let sends = 0;
+  const requests: ArcGisCollectionRequest[] = [];
   const client: ArcGisClient = Object.freeze({
-    collect(): Promise<ArcGisCollectionResult> {
+    collect(request = {}): Promise<ArcGisCollectionResult> {
       const result = results[sends];
       if (result === undefined) {
         throw new Error('Unexpected extra collection attempt');
       }
       sends += 1;
+      requests.push(request);
       return Promise.resolve(result);
     },
   });
@@ -193,9 +225,18 @@ function createContext(
       dailyAttemptBudget: dailyBudget,
       resiliencePolicy,
       client,
+      snapshotPublisher: options.snapshotPublisher ?? acceptingPublisher(),
     }),
     dailyBudget,
     sendCount: () => sends,
+    requests: () => requests,
+  });
+}
+
+function acceptingPublisher(): CollectionSnapshotPublisher {
+  return Object.freeze({
+    apply: () => Object.freeze({ ok: true, status: 'ignored' }),
+    sourceEtag: () => undefined,
   });
 }
 

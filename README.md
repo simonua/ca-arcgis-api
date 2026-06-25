@@ -19,10 +19,13 @@ deployment, and routine development does not enable live ArcGIS access.
 - The fixed ArcGIS collection URL, strict runtime configuration parser, injected HTTP client,
   source-response validator, operating-window gate, monotonic five-minute permit, shared no-overlap
   source-operation lock, completion-based backoff, collection circuit, daily attempt ceiling, and
-  injected single-timer scheduler runner are implemented and tested with synthetic inputs. The
-  runner uses bounded startup jitter, separate wall and monotonic deadlines, long-wait chunking, and
-  no catch-up polling. Polling is disabled by default, and routine development performs no live
-  source requests.
+  injected single-timer scheduler runner are implemented and tested with synthetic inputs. A strict
+  normalization boundary now maps validated records through injected registry and domain policy to
+  one immutable, consumer-owned in-memory snapshot. Source presentation fields and validators are
+  not retained in that snapshot, failed publication leaves the prior snapshot untouched, and a `304`
+  advances only harvester freshness. The runner uses bounded startup jitter, separate wall and
+  monotonic deadlines, long-wait chunking, and no catch-up polling. Polling is disabled by default,
+  and routine development performs no live source requests.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
