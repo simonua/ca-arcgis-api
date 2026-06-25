@@ -24,6 +24,7 @@ import {
   type MatchedApiEndpoint,
 } from './endpoint-descriptors.ts';
 import type { InboundRateLimiter } from './inbound-rate-limiter.ts';
+import { API_FILTER_VALUES } from './openapi-contract.ts';
 import { type ApiProblemCode, createProblemResponse } from './problem-details.ts';
 
 const ALLOWED_METHODS = 'GET, HEAD, OPTIONS';
@@ -31,32 +32,11 @@ const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 const PUBLIC_CACHE_MAX_AGE_SECONDS = 60;
 const DEFAULT_MAX_URL_CHARS = 2_048;
 const DEFAULT_MAX_HEADER_BYTES = 16_384;
-const LOCATION_TYPES = new Set<PoolLocationType>(['indoor', 'outdoor']);
-const ACCESS_VALUES = new Set<PoolAccess>([
-  'open-public',
-  'restricted-program',
-  'partial',
-  'closed',
-  'unknown',
-]);
-const CLOSURE_KINDS = new Set<PoolClosureKind>([
-  'inclement-weather',
-  'air-quality',
-  'maintenance',
-  'unplanned',
-  'off-hours',
-  'season',
-  'swim-team',
-  'summer-camp',
-  'private-event',
-  'none',
-]);
-const DATA_STATES = new Set<FreshnessState>(['current', 'degraded', 'unavailable']);
 const FILTERS = Object.freeze({
-  locationType: LOCATION_TYPES,
-  access: ACCESS_VALUES,
-  closureKind: CLOSURE_KINDS,
-  dataState: DATA_STATES,
+  locationType: new Set<PoolLocationType>(API_FILTER_VALUES.locationType),
+  access: new Set<PoolAccess>(API_FILTER_VALUES.access),
+  closureKind: new Set<PoolClosureKind>(API_FILTER_VALUES.closureKind),
+  dataState: new Set<FreshnessState>(API_FILTER_VALUES.dataState),
 });
 
 export interface ApiRequestContext {
@@ -206,9 +186,17 @@ export function createApiRequestHandler(options: ApiRequestHandlerOptions): ApiR
       );
     }
     if (match.descriptor.id === 'readiness') {
-      return hasServiceableSnapshot(snapshot, projected.value)
+      return snapshot !== undefined && hasServiceableSnapshot(snapshot, projected.value)
         ? jsonResponse(
-          { status: 'ready', snapshotState: projected.value.snapshotState },
+          {
+            status: projected.value.snapshotState === 'current' ? 'ready' : 'degraded',
+            snapshotState: projected.value.snapshotState,
+            collectionState: projected.value.collectionState,
+            lastCheckedAt: snapshot.lastCheckedAt,
+            ...(projected.value.nextSourceAccessAt === undefined
+              ? {}
+              : { nextSourceAccessAt: projected.value.nextSourceAccessAt }),
+          },
           request.method === 'HEAD',
           corsHeaders,
           'no-store',

@@ -5,9 +5,9 @@ Audited: 2026-06-25
 ## Scope
 
 Repository scaffolding, customization ownership, Deno validation, CNSL alignment, and the offline
-harvester scheduling, snapshot, semantic freshness, and bounded representation-cache boundaries
-were reviewed. Runtime process composition, the read-only HTTP API, container packaging, and Azure
-infrastructure are not yet implemented.
+harvester scheduling, snapshot, semantic freshness, bounded representation-cache, injected runtime,
+read-only HTTP API, and generated OpenAPI boundaries were reviewed. Production process composition,
+container packaging, and Azure infrastructure are not yet implemented.
 
 ## Active Recommendations
 

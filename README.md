@@ -33,11 +33,13 @@ ArcGIS access.
   jitter, separate wall and monotonic deadlines, long-wait chunking, and no catch-up polling. Polling
   is disabled by default, and routine development performs no live source requests.
 - The injected HTTP runtime serves normalized pool, single-pool, closure, health, readiness, and
-  generated OpenAPI routes without any request-to-source path. It enforces bounded request inputs,
-  exact filters, RFC 9457 errors, CORS allowlisting, strong conditional ETags, semantic cache
-  transitions, and bounded per-client quotas using ACA's trusted forwarding hop. Server startup and
-  scheduler shutdown ordering are independently tested. Swagger remains unavailable until reviewed,
-  integrity-verified assets are added.
+  generated OpenAPI routes without any request-to-source path. The deterministic OpenAPI 3.1
+  document binds canonical paths, methods, filters, response schemas, headers, and Problem Details
+  metadata to the same code-owned contract used by request validation. The runtime enforces bounded
+  request inputs, exact filters, RFC 9457 errors, CORS allowlisting, strong conditional ETags,
+  semantic cache transitions, and bounded per-client quotas using ACA's trusted forwarding hop.
+  Server startup and scheduler shutdown ordering are independently tested. Swagger remains
+  unavailable until reviewed, integrity-verified assets are added.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout

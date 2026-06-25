@@ -9,10 +9,12 @@ import {
 } from '../src/freshness/semantic-freshness-projector.ts';
 import { createOperatingWindowGate } from '../src/harvesting/operating-window-gate.ts';
 import { type ApiRequestHandler, createApiRequestHandler } from '../src/http/api-handler.ts';
+import { API_ENDPOINTS } from '../src/http/endpoint-descriptors.ts';
 import {
   createInboundRateLimiter,
   type InboundRateLimiter,
 } from '../src/http/inbound-rate-limiter.ts';
+import { API_FILTER_VALUES } from '../src/http/openapi-contract.ts';
 import { createPoolNormalizer } from '../src/normalization/pool-normalizer.ts';
 import { createSnapshotStore, type SnapshotStore } from '../src/snapshot/snapshot-store.ts';
 import { normalizerOptions, sourceCollection } from './support/pool-test-data.ts';
@@ -167,15 +169,106 @@ Deno.test('API limits one ACA client despite spoofed left forwarding values', as
   assertEquals(limited.headers.get('retry-after'), '60');
 
   assertEquals((await harness.handler(request('/healthz'))).status, 200);
-  assertEquals((await harness.handler(request('/readyz'))).status, 200);
+  const readinessResponse = await harness.handler(request('/readyz'));
+  assertEquals(readinessResponse.status, 200);
+  assertEquals(
+    await jsonObject(readinessResponse),
+    {
+      status: 'ready',
+      snapshotState: 'current',
+      collectionState: 'active',
+      lastCheckedAt: '2026-06-24T12:10:00.000Z',
+    },
+  );
 });
 
-Deno.test('OpenAPI is deterministic and disabled discovery routes are absent', async () => {
+Deno.test('OpenAPI is deterministic, schema-bound, and matches the canonical HTTP surface', async () => {
   const enabled = createHarness();
   const first = await enabled.handler(request('/openapi/v1.json'));
   const second = await enabled.handler(request('/openapi/v1.json'));
   assertEquals(first.status, 200);
-  assertEquals(await first.text(), await second.text());
+  const firstText = await first.text();
+  assertEquals(firstText, await second.text());
+
+  const document = JSON.parse(firstText) as Record<string, unknown>;
+  assertEquals(document.openapi, '3.1.0');
+  assertEquals(document.security, []);
+  const paths = objectValue(document, 'paths');
+  const documentedPaths = Object.keys(paths);
+  assertEquals(
+    documentedPaths,
+    API_ENDPOINTS.filter((endpoint) => endpoint.id !== 'swagger').map((endpoint) => endpoint.path),
+  );
+  for (const endpoint of API_ENDPOINTS.filter((candidate) => candidate.id !== 'swagger')) {
+    const pathItem = objectValue(paths, endpoint.path);
+    assertEquals(Object.keys(pathItem), ['get', 'head', 'options']);
+    const get = objectValue(pathItem, 'get');
+    const head = objectValue(pathItem, 'head');
+    const options = objectValue(pathItem, 'options');
+    assertEquals(get.operationId, endpoint.id);
+    assertEquals(head.operationId, `${endpoint.id}Head`);
+    assertEquals(options.operationId, `${endpoint.id}Options`);
+    assert(hasJsonSchemaResponse(get, '200'));
+    assert(!responseValue(head, '200').content);
+    assert(responseValue(options, '204').headers !== undefined);
+  }
+
+  const listPoolsGet = objectValue(objectValue(paths, '/v1/pools'), 'get');
+  const filterParameters = listPoolsGet.parameters as readonly Record<string, unknown>[];
+  assertEquals(
+    filterParameters.map((parameter) => parameter.name),
+    Object.keys(API_FILTER_VALUES),
+  );
+  for (const [name, values] of Object.entries(API_FILTER_VALUES)) {
+    const parameter = filterParameters.find((candidate) => candidate.name === name);
+    assert(parameter !== undefined);
+    assertEquals(objectValue(parameter, 'schema').enum, values);
+  }
+  assertEquals(Object.keys(objectValue(listPoolsGet, 'responses')), [
+    '200',
+    '304',
+    '400',
+    '405',
+    '406',
+    '415',
+    '429',
+    '500',
+    '503',
+  ]);
+  assertProblemSchemaResponse(listPoolsGet, '400');
+  assertProblemSchemaResponse(listPoolsGet, '429');
+  assertProblemSchemaResponse(listPoolsGet, '503');
+
+  const components = objectValue(document, 'components');
+  const schemas = objectValue(components, 'schemas');
+  assertEquals(Object.keys(schemas), [
+    'Snapshot',
+    'PoolOperating',
+    'PoolMaintenance',
+    'PoolOccupancy',
+    'Pool',
+    'PoolsResponse',
+    'PoolResponse',
+    'ClosuresResponse',
+    'HealthResponse',
+    'ReadinessResponse',
+    'ProblemDetails',
+    'OpenApiDocument',
+  ]);
+  const serializedContract = JSON.stringify(document).toLowerCase();
+  for (
+    const rawField of [
+      'assetid',
+      'globalid',
+      'editor',
+      'geometry',
+      'formlink',
+      'attachments',
+      'sourceurl',
+    ]
+  ) {
+    assert(!serializedContract.includes(rawField), `OpenAPI exposed raw field ${rawField}`);
+  }
   assertProblem(await enabled.handler(request('/swagger')), 404, 'route_not_found');
 
   const disabled = createHarness({ openApiEnabled: false });
@@ -309,8 +402,13 @@ function assert(condition: boolean, message = 'Assertion failed'): asserts condi
 }
 
 function assertEquals(actual: unknown, expected: unknown): void {
-  if (actual !== expected) {
-    throw new Error(`Expected ${String(expected)}, received ${String(actual)}`);
+  if (Object.is(actual, expected)) {
+    return;
+  }
+  const actualJson = JSON.stringify(actual);
+  const expectedJson = JSON.stringify(expected);
+  if (actualJson !== expectedJson) {
+    throw new Error(`Expected ${expectedJson}, received ${actualJson}`);
   }
 }
 
@@ -318,4 +416,38 @@ function assertNotEquals(actual: unknown, expected: unknown): void {
   if (actual === expected) {
     throw new Error(`Expected values to differ, both were ${String(actual)}`);
   }
+}
+
+function objectValue(
+  object: Readonly<Record<string, unknown>>,
+  key: string,
+): Record<string, unknown> {
+  const value = object[key];
+  assert(value !== null && typeof value === 'object' && !Array.isArray(value));
+  return value as Record<string, unknown>;
+}
+
+function responseValue(
+  operation: Readonly<Record<string, unknown>>,
+  status: string,
+): Record<string, unknown> {
+  return objectValue(objectValue(operation, 'responses'), status);
+}
+
+function hasJsonSchemaResponse(
+  operation: Readonly<Record<string, unknown>>,
+  status: string,
+): boolean {
+  const content = objectValue(responseValue(operation, status), 'content');
+  const media = objectValue(content, 'application/json');
+  return '$ref' in objectValue(media, 'schema');
+}
+
+function assertProblemSchemaResponse(
+  operation: Readonly<Record<string, unknown>>,
+  status: string,
+): void {
+  const content = objectValue(responseValue(operation, status), 'content');
+  const media = objectValue(content, 'application/problem+json');
+  assertEquals(objectValue(media, 'schema').$ref, '#/components/schemas/ProblemDetails');
 }

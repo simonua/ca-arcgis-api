@@ -1054,6 +1054,11 @@ The highest-risk work is the source trust boundary, identity mapping, and freshn
 | 8. Production API launch | Deploy the signed digest to `api.pools.longreachmarlins.org` with managed TLS, CORS, monitoring, alerting, budget, and rollback | Operational owner accepts certificate, dashboards, alerts, runbook, request budget, and monthly cost envelope |
 | 9. Optional web-app integration | Add the separate browser consumer after API stability is proven | Focused unit, browser, accessibility, PWA, and performance evidence passes |
 
+The offline Phase 4 HTTP and generated OpenAPI contract are implemented. Its exit gate remains open
+until internal telemetry ownership is defined and a reviewed, pinned, checksum-verified Swagger UI
+distribution passes controlled enablement tests. Production discovery exposure remains a separate
+approval decision below.
+
 ## Pre-Implementation Decisions
 
 - [ ] Ask CA whether a public query-only hosted feature view exists or can be created.

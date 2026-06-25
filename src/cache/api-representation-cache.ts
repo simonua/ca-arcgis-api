@@ -11,6 +11,40 @@ export interface ApiRepresentationFilters {
   readonly dataState?: FreshnessState;
 }
 
+export const API_REPRESENTATION_FILTER_VALUES = Object.freeze({
+  locationType: Object.freeze(['indoor', 'outdoor'] satisfies readonly PoolLocationType[]),
+  access: Object.freeze(
+    [
+      'open-public',
+      'restricted-program',
+      'partial',
+      'closed',
+      'unknown',
+    ] satisfies readonly PoolAccess[],
+  ),
+  closureKind: Object.freeze(
+    [
+      'inclement-weather',
+      'air-quality',
+      'maintenance',
+      'unplanned',
+      'off-hours',
+      'season',
+      'swim-team',
+      'summer-camp',
+      'private-event',
+      'none',
+    ] satisfies readonly PoolClosureKind[],
+  ),
+  dataState: Object.freeze(
+    [
+      'current',
+      'degraded',
+      'unavailable',
+    ] satisfies readonly FreshnessState[],
+  ),
+});
+
 interface ApiRepresentationKeyBase {
   readonly generation: number;
   readonly semanticEpoch: number;
@@ -113,31 +147,16 @@ type StoredRepresentationResult =
   | Readonly<{ ok: true; value: StoredRepresentation }>
   | Extract<ApiRepresentationCacheReadResult, { ok: false }>;
 
-const LOCATION_TYPES: ReadonlySet<string> = new Set<PoolLocationType>(['indoor', 'outdoor']);
-const ACCESS_VALUES: ReadonlySet<string> = new Set<PoolAccess>([
-  'open-public',
-  'restricted-program',
-  'partial',
-  'closed',
-  'unknown',
-]);
-const CLOSURE_KINDS: ReadonlySet<string> = new Set<PoolClosureKind>([
-  'inclement-weather',
-  'air-quality',
-  'maintenance',
-  'unplanned',
-  'off-hours',
-  'season',
-  'swim-team',
-  'summer-camp',
-  'private-event',
-  'none',
-]);
-const FRESHNESS_STATES: ReadonlySet<string> = new Set<FreshnessState>([
-  'current',
-  'degraded',
-  'unavailable',
-]);
+const LOCATION_TYPES: ReadonlySet<string> = new Set(
+  API_REPRESENTATION_FILTER_VALUES.locationType,
+);
+const ACCESS_VALUES: ReadonlySet<string> = new Set(API_REPRESENTATION_FILTER_VALUES.access);
+const CLOSURE_KINDS: ReadonlySet<string> = new Set(
+  API_REPRESENTATION_FILTER_VALUES.closureKind,
+);
+const FRESHNESS_STATES: ReadonlySet<string> = new Set(
+  API_REPRESENTATION_FILTER_VALUES.dataState,
+);
 const FILTER_NAMES = new Set(['locationType', 'access', 'closureKind', 'dataState']);
 
 /** Stores only bounded, successful API representations for one active snapshot generation. */

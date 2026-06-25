@@ -1,3 +1,12 @@
+import {
+  createOpenApiOptionsResponses,
+  createOpenApiQueryParameters,
+  createOpenApiResponses,
+  type DocumentedApiEndpointId,
+  OPENAPI_COMPONENTS,
+  withoutOpenApiResponseContent,
+} from './openapi-contract.ts';
+
 export const API_VERSION = '1' as const;
 
 export type ApiEndpointId =
@@ -11,6 +20,7 @@ export type ApiEndpointId =
 
 export interface ApiEndpointDescriptor {
   readonly id: ApiEndpointId;
+  readonly methods: readonly ['GET', 'HEAD', 'OPTIONS'];
   readonly path: string;
   readonly summary: string;
   readonly successStatus: 200;
@@ -69,38 +79,16 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
     if (descriptor.id === 'swagger') {
       continue;
     }
+    const responses = createOpenApiResponses(descriptor.id satisfies DocumentedApiEndpointId);
+    const parameters = endpointParameters(descriptor.id);
     paths[descriptor.path] = Object.freeze({
-      get: Object.freeze({
-        operationId: descriptor.id,
-        summary: descriptor.summary,
+      get: operation(descriptor, parameters, responses),
+      head: operation(descriptor, parameters, withoutOpenApiResponseContent(responses), 'Head'),
+      options: Object.freeze({
+        operationId: `${descriptor.id}Options`,
+        summary: `Get options for ${descriptor.summary.toLowerCase()}`,
         tags: descriptor.tags,
-        ...(descriptor.id === 'getPool'
-          ? {
-            parameters: Object.freeze([
-              Object.freeze({
-                name: 'poolId',
-                in: 'path',
-                required: true,
-                description: 'Lowercase application-owned pool identifier.',
-                schema: Object.freeze({
-                  type: 'string',
-                  pattern: '^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$',
-                }),
-              }),
-            ]),
-          }
-          : {}),
-        responses: Object.freeze({
-          [String(descriptor.successStatus)]: Object.freeze({
-            description: 'Successful response.',
-          }),
-          ...(descriptor.id === 'health' || descriptor.id === 'readiness' ? {} : {
-            '429': Object.freeze({ description: 'Client request limit exceeded.' }),
-          }),
-          ...(descriptor.id === 'health' || descriptor.id === 'openApi' ? {} : {
-            '503': Object.freeze({ description: 'No serviceable snapshot is available.' }),
-          }),
-        }),
+        responses: createOpenApiOptionsResponses(),
       }),
     });
   }
@@ -112,7 +100,45 @@ export function createOpenApiDocument(): Readonly<Record<string, unknown>> {
       version: API_VERSION,
       description: 'Read-only normalized pool status snapshots.',
     }),
+    security: Object.freeze([]),
     paths: Object.freeze(paths),
+    components: OPENAPI_COMPONENTS,
+  });
+}
+
+function endpointParameters(
+  id: DocumentedApiEndpointId,
+): readonly Readonly<Record<string, unknown>>[] {
+  const pathParameters = id === 'getPool'
+    ? [Object.freeze({
+      name: 'poolId',
+      in: 'path',
+      required: true,
+      description: 'Lowercase application-owned pool identifier.',
+      schema: Object.freeze({
+        type: 'string',
+        pattern: '^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$',
+      }),
+    })]
+    : [];
+  const queryParameters = id === 'listPools' || id === 'listClosures'
+    ? createOpenApiQueryParameters()
+    : [];
+  return Object.freeze([...pathParameters, ...queryParameters]);
+}
+
+function operation(
+  descriptor: ApiEndpointDescriptor,
+  parameters: readonly Readonly<Record<string, unknown>>[],
+  responses: Readonly<Record<string, unknown>>,
+  operationSuffix = '',
+): Readonly<Record<string, unknown>> {
+  return Object.freeze({
+    operationId: `${descriptor.id}${operationSuffix}`,
+    summary: operationSuffix === '' ? descriptor.summary : `${descriptor.summary} without a body`,
+    tags: descriptor.tags,
+    ...(parameters.length === 0 ? {} : { parameters }),
+    responses,
   });
 }
 
@@ -122,5 +148,12 @@ function endpoint(
   summary: string,
   tags: readonly string[],
 ): ApiEndpointDescriptor {
-  return Object.freeze({ id, path, summary, successStatus: 200, tags: Object.freeze([...tags]) });
+  return Object.freeze({
+    id,
+    methods: Object.freeze(['GET', 'HEAD', 'OPTIONS'] as const),
+    path,
+    summary,
+    successStatus: 200,
+    tags: Object.freeze([...tags]),
+  });
 }
