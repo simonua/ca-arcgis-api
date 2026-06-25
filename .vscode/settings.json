@@ -13,6 +13,18 @@
   "markdown.validate.enabled": true,
   "markdownlint.ignore": ["test-results/**"],
   "markdownlint.run": "onType",
+  "[json]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
   "[markdown]": {
     "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
     "editor.wordWrap": "on",

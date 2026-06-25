@@ -27,6 +27,16 @@ description: 'Use when working with Deno configuration, local development, forma
 Before adding a new task, prefer composing a deterministic Deno command. Keep tasks platform-neutral
 and suitable for PowerShell and GitHub-hosted Linux runners.
 
+## Formatting
+
+- Treat `deno fmt` output and the active `deno.json` formatting options as canonical for every
+  supported file. JSON and JSONC use two-space indentation as declared in `.editorconfig`.
+- Before manually creating or editing a structured file, inspect its current formatting and the
+  nearest formatter configuration. Preserve that style in the edit itself so formatting does not
+  obscure the behavioral diff.
+- Run `deno fmt <changed-paths>` immediately after changing Deno-owned files. Do not defer known
+  normalization until final verification or rely on format-on-save to repair an avoidable diff.
+
 ## Scope
 
 - During iteration, run the exact changed test file or the smallest affected group with
