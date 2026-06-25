@@ -4,14 +4,14 @@ applyTo: '**'
 
 # Project Overview
 
-`ca-arcgis-api` is the proposed Deno service boundary between Columbia Association's public ArcGIS
+`ca-arcgis-api` is the Deno service boundary between Columbia Association's public ArcGIS
 pool-status layer and approved consumers, including the CNSL web app. It will poll one fixed
 upstream query on a bounded schedule, validate and normalize untrusted records, retain one immutable
 in-memory snapshot, and expose a small read-only API.
 
-The implementation plan in `docs/live-pool-status-integration-plan.md` is proposal-only. Repository
-scaffolding does not authorize live ArcGIS access, a public API, container publication, Azure
-resources, DNS changes, or production deployment.
+Offline service implementation is authorized under
+`docs/live-pool-status-integration-plan.md`. Implementation work does not authorize live ArcGIS
+access, a public API, container publication, Azure resources, DNS changes, or production deployment.
 
 ## Continuing Reference
 
@@ -55,6 +55,9 @@ resources, DNS changes, or production deployment.
   ArcGIS sends. Failures consume permits; no automatic retries or hidden resilience handlers.
 - Tests and routine agent verification must never contact ArcGIS, Azure, CNSL production, or the
   deployed API. Use injected fixture fetchers.
+- Emit at most one bounded structured event per actual ArcGIS HTTP attempt. Preserve stable failure
+  evidence without URLs, query strings, headers, payloads, source values, exception messages, or
+  stack traces; telemetry failures must never affect source-request decisions.
 - Never persist ArcGIS snapshots, validators, attendance history, request history, or visitor data
   in version 1.
 - Do not expose raw source records, geometry, editor identities, global IDs, form links,

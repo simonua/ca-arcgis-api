@@ -1,0 +1,31 @@
+{
+  "exceededTransferLimit": false,
+  "features": [
+    {
+      "attributes": {
+        "Name": "Synthetic Outdoor Pool",
+        "AssetID": "TEST-001",
+        "Pool_Name": "Synthetic Outdoor",
+        "pool_location": "outdoor",
+        "Status": "Open",
+        "Status2": "No Ongoing Maintenance",
+        "Pool_Attendance": 24,
+        "Pool_Capacity": 120,
+        "EditDate": 1782345600000
+      }
+    },
+    {
+      "attributes": {
+        "Name": "Synthetic Indoor Pool",
+        "AssetID": "TEST-002",
+        "Pool_Name": "Synthetic Indoor",
+        "pool_location": "indoor",
+        "Status": "Closed (Maintenance)",
+        "Status2": null,
+        "Pool_Attendance": null,
+        "Pool_Capacity": 80,
+        "EditDate": 1782345660000
+      }
+    }
+  ]
+}

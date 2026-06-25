@@ -1,16 +1,16 @@
 # Live Pool Status Harvester And API Plan
 
-Status: Proposal only; no implementation is authorized by this document.
+Status: Offline implementation authorized; live ArcGIS access and deployment remain unapproved.
 
 Reviewed: 2026-06-25
 
 ## Purpose
 
-Plan a future containerized service that periodically reads Columbia Association's public ArcGIS pool-status layer, validates and normalizes the records, and exposes a small read-only API for the CNSL web app and other approved consumers.
+Define the containerized service that will periodically read Columbia Association's public ArcGIS pool-status layer, validate and normalize the records, and expose a small read-only API for the CNSL web app and other approved consumers.
 
 The container would be the only CNSL-owned component that contacts ArcGIS. Browsers would query the CNSL-owned API instead of querying ArcGIS directly. This centralizes request pacing, protects the web app from source-contract changes, and prevents one ArcGIS request per visitor.
 
-This document does not authorize a container, API, browser integration, deployment, annual-data change, or source-schema change.
+Implementation in this repository does not authorize live ArcGIS access, API publication, browser integration, deployment, annual-data changes, or source-schema changes without their applicable approvals.
 
 ## Goals
 
@@ -22,7 +22,7 @@ This document does not authorize a container, API, browser integration, deployme
 - Retain the last accepted in-memory snapshot across closed hours and extended source failures without presenting expired values as current.
 - Distinguish the time the container checked ArcGIS from the time CA last updated each pool.
 - Treat all ArcGIS values as untrusted, even though the source is official and public.
-- Build the service in a separate `pool-status-api` repository; keep this document as the CNSL-side contract and integration handoff.
+- Keep the service in this separate API repository and use this document as the CNSL-side contract and integration handoff.
 - Host the production API at `https://api.pools.longreachmarlins.org` on a cost-bounded Azure deployment.
 - Provision Azure resources only through Bicep with configurable resource-group placement and Cloud Adoption Framework naming.
 - Leave annual schedules and existing schedule-derived pool status as the web app's independent fallback.
@@ -167,7 +167,7 @@ Compile with an explicit environment-variable allowlist and network access limit
 
 ## Separate Repository Layout
 
-Create a separate repository when implementation is authorized. Do not add the service or its infrastructure to this repository:
+This repository is the separate service boundary. Do not add the service or its infrastructure to the CNSL repository:
 
 ```text
 pool-status-api/
@@ -614,6 +614,34 @@ A retained but stale snapshot normally remains a `200` because the body explicit
 
 ## Observability And Operations
 
+### ArcGIS Request Events
+
+In the default `lean` mode, emit exactly one structured JSON event after each actual ArcGIS HTTP
+attempt. Successful `200` and expected `304` attempts use `info`; transient failures use `warn`;
+source-safety failures that open a circuit or require operator review use `error`. A denied
+operating window, unavailable permit, open circuit, or daily ceiling performs no HTTP attempt and
+must not be represented as one, though a bounded state-transition event may describe the deferral.
+
+Each attempt event uses a versioned schema and fixed values for operation, result, failure class,
+and validator result. It may include duration, HTTP status, response byte count, accepted and
+rejected record counts, and consecutive failures. It must never include the source URL, query
+string, request or response headers, validators, response body, pool IDs, source field values,
+exception messages, or stack traces. Logging is best-effort and must never change permit, circuit,
+backoff, snapshot, or scheduler decisions.
+
+Write these events as one JSON object per console line and let the deployment log sink own durable
+retention. Configure the ArcGIS operational-log table through Bicep for seven days of interactive
+retention with no long-term or archive retention. Seven days is a revolving diagnostic window and
+a data-minimization choice; Azure includes up to 31 days in ingestion pricing, so reducing retention
+does not itself reduce ingestion cost. Validate the selected Analytics-plan table supports the
+seven-day setting before deployment. See the official
+[Azure Monitor retention guidance](https://learn.microsoft.com/azure/azure-monitor/logs/data-retention-configure).
+
+Do not enable automatic ArcGIS request traces in `lean` mode. Full dependency traces remain an
+explicit `full`-mode upgrade after exporter, sampling, volume, and cost validation; any enabled
+ArcGIS trace table should use the same seven-day diagnostic window unless Azure requires a longer
+minimum.
+
 ### Metrics
 
 Define the following low-cardinality operational signals without exposing a public metrics endpoint. In `lean` mode, represent safety-critical states through Azure platform metrics, bounded structured transition events, and health state; do not emit one log per metric sample. In approved `full` mode, export the applicable counters, gauges, and histograms through OpenTelemetry:
@@ -679,7 +707,7 @@ Detailed rejected values belong in restricted logs, not health responses.
 
 Use a two-level observability design so telemetry does not quietly cost more than the service.
 
-- `lean` is the launch default: Azure platform metrics, structured state-transition and failure logs, one pay-as-you-go Log Analytics workspace with the shortest practical retention, and narrowly scoped log alerts for source-safety conditions. Do not provision Application Insights or enable Deno automatic request tracing in this mode.
+- `lean` is the launch default: Azure platform metrics, structured ArcGIS attempt, state-transition, and failure logs, one pay-as-you-go Log Analytics workspace with seven-day table-level retention for ArcGIS operational events, and narrowly scoped log alerts for source-safety conditions. Do not provision Application Insights or enable Deno automatic request tracing in this mode.
 - `full` is an approved upgrade: add workspace-based Application Insights and the Container Apps managed OpenTelemetry agent, then enable Deno's built-in OpenTelemetry export. Deno automatically instruments `Deno.serve` and `fetch`, while `npm:@opentelemetry/api@1` is needed only for reviewed custom instruments.
 
 The full-mode implementation spike must prove protocol compatibility with the selected Deno version and Container Apps agent, route normalization, correlation, shutdown flushing, and bounded ingestion before production approval. Current Deno OpenTelemetry documentation states that automatic traces are always sampled, so do not enable full automatic tracing on the assumption that successful requests can be sampled in process. Either prove supported signal-level controls and an acceptable measured volume, place a sampling collector in an explicitly priced design, or remain in `lean` mode. In both modes, telemetry stays outside source-request decisions, structured console logs remain the diagnostic fallback, and HTTP ingress logs remain disabled unless an incident or measured gap justifies them.
@@ -695,7 +723,7 @@ Telemetry must answer these operational questions:
 
 Use fixed low-cardinality dimensions only. Never attach pool IDs, visitor addresses, arbitrary routes, query strings, source payloads, exception messages, or user-agent strings to metric dimensions. Normalize routes before telemetry leaves the process, retain failure and source-operation evidence, and emit state-transition events rather than repeated closed-hours heartbeat logs. Metric instruments should aggregate in process; do not turn every five-minute poll or health probe into multiple verbose log records. Enable request traces only when the selected Deno exporter path can meet the approved ingestion envelope.
 
-Configure the Log Analytics workspace for pay-as-you-go ingestion and the shortest supported interactive retention that meets the operating need, proposed as 30 days until the selected region and workspace capabilities are priced. Set a conservative daily ingestion cap and a warning below that cap after measuring normal telemetry; treat the cap as a cost circuit breaker, not as the only alert. Create a small Azure Monitor workbook only if built-in Azure Monitor views and committed KQL queries prove insufficient. Do not add Sentinel, a dedicated Log Analytics cluster, data export, long-term retention, or commitment tiers for this workload.
+Configure the Log Analytics workspace for pay-as-you-go ingestion and set the ArcGIS operational-log table's interactive retention to seven days through Bicep. Set a conservative daily ingestion cap and a warning below that cap after measuring normal telemetry; treat the cap as a cost circuit breaker, not as the only alert. Create a small Azure Monitor workbook only if built-in Azure Monitor views and committed KQL queries prove insufficient. Do not add Sentinel, a dedicated Log Analytics cluster, data export, long-term retention, or commitment tiers for this workload.
 
 Use one Azure Monitor action group with reviewed email recipients and the smallest actionable alert set:
 
@@ -780,6 +808,7 @@ Use a subscription-scope `infra/main.bicep` so the resource group is an explicit
 | `alertEmailReceivers` | Secure or deployment-time notification configuration; never committed with personal addresses |
 | `monthlyBudgetAmount` | Required approved currency amount used for a resource-group budget and forecast alert |
 | `logDailyCapGb` | Conservative bounded ingestion cap validated against Azure's supported minimum |
+| `operationalLogRetentionDays` | Defaults to `7`; allowed range `4` to `30`, applied at table level with no archive retention |
 | `observabilityMode` | Allowed `lean` or `full`; defaults to `lean` and conditionally provisions Application Insights and managed OpenTelemetry |
 
 Use modules for monitoring, the Container Apps environment, the app, alerts, and the custom-domain binding. Pin stable resource API versions, enable the Bicep linter, fail warnings in CI, and run `bicep build`, `bicep lint`, and subscription-scope what-if before production. Store reviewed nonsecret production values in `prod.bicepparam`; never commit subscription IDs, personal email addresses, credentials, or registry tokens.

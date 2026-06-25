@@ -1,11 +1,12 @@
 # CA ArcGIS API
 
-`ca-arcgis-api` is the proposed read-only service boundary between Columbia Association's public
+`ca-arcgis-api` is the developing read-only service boundary between Columbia Association's public
 ArcGIS pool-status layer and approved consumers such as the
 [CNSL web app](https://github.com/simonua/cnsl).
 
-The repository currently contains the reviewed integration plan and implementation scaffolding. It
-does not yet contain an authorized harvester, public API, container image, or Azure deployment.
+The repository contains the reviewed integration plan and the first offline harvester trust
+boundary. It does not yet contain a network client, scheduler, public API, container image, or Azure
+deployment.
 
 ## Current Status
 
@@ -15,7 +16,9 @@ does not yet contain an authorized harvester, public API, container image, or Az
   closely; see [repository alignment](docs/repository-alignment.md).
 - The runtime target is Deno 2 with strict TypeScript, native Web APIs, built-in formatting,
   linting, type checking, and testing.
-- Production infrastructure will be Bicep-only when implementation and deployment are authorized.
+- The fixed ArcGIS collection URL and source-response validator are implemented and tested with
+  synthetic fixtures; routine development performs no live source requests.
+- Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
 
@@ -50,9 +53,9 @@ Install the Deno version pinned in [the CI workflow](.github/workflows/ci.yml), 
 Tests must use fixtures and injected dependencies. They must not contact ArcGIS, Azure, CNSL
 production, or any other live service.
 
-## Implementation Gate
+## Remaining Approval Gates
 
-The planning document remains proposal-only. Before service implementation begins, resolve its
-explicit approval gates, including source reuse and attribution, the reviewed pool registry and
-status mapping, freshness policy, operating-window artifact ownership, and Azure deployment
-authorization.
+Offline service implementation is underway. Before live ArcGIS access, public API publication,
+container publication, or deployment, resolve the applicable approval gates, including source
+reuse and attribution, the reviewed pool registry and status mapping, freshness policy,
+operating-window artifact ownership, and Azure deployment authorization.

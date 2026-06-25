@@ -1,53 +1,53 @@
 {
-    "version": "0.0.0",
-    "exports": "./src/index.ts",
-    "compilerOptions": {
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "noImplicitOverride": true
-    },
-    "fmt": {
-        "lineWidth": 100,
-        "indentWidth": 2,
-        "semiColons": true,
-        "singleQuote": true,
-        "exclude": [
-            "README.md",
-            ".github/**/*.md",
-            "**/*.md"
-        ],
-        "include": [
-            ".github/",
-            ".vscode/",
-            "config/",
-            "deploy/",
-            "docs/",
-            "infra/",
-            "schemas/",
-            "src/",
-            "tests/",
-            "README.md",
-            "deno.json"
-        ]
-    },
-    "lint": {
-        "include": [
-            "src/",
-            "tests/"
-        ],
-        "rules": {
-            "tags": [
-                "recommended"
-            ]
-        }
-    },
-    "tasks": {
-        "fmt": "deno fmt",
-        "fmt:check": "deno fmt --check",
-        "lint": "deno lint",
-        "check": "deno check src/index.ts tests/scaffold.test.ts",
-        "test": "deno test --no-prompt --parallel tests/",
-        "verify": "deno task fmt:check && deno task lint && deno task check && deno task test"
+  "version": "0.0.0",
+  "exports": "./src/index.ts",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": true,
+    "exclude": [
+      "README.md",
+      ".github/**/*.md",
+      "**/*.md"
+    ],
+    "include": [
+      ".github/",
+      ".vscode/",
+      "config/",
+      "deploy/",
+      "docs/",
+      "infra/",
+      "schemas/",
+      "src/",
+      "tests/",
+      "README.md",
+      "deno.json"
+    ]
+  },
+  "lint": {
+    "include": [
+      "src/",
+      "tests/"
+    ],
+    "rules": {
+      "tags": [
+        "recommended"
+      ]
     }
+  },
+  "tasks": {
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
+    "check": "deno check src/index.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/arcgis-events.test.ts",
+    "test": "deno test --no-prompt --parallel tests/",
+    "verify": "deno task fmt:check && deno task lint && deno task check && deno task test"
+  }
 }
