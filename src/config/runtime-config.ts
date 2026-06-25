@@ -4,13 +4,22 @@ const DEFAULT_HTTP_PORT = 8080;
 const DEFAULT_POLL_INTERVAL_SECONDS = MIN_COLLECTION_INTERVAL_MS / 1_000;
 const DEFAULT_POLL_TIMEOUT_SECONDS = 10;
 const DEFAULT_MAX_BACKOFF_SECONDS = 1_800;
+const DEFAULT_CIRCUIT_FAILURE_THRESHOLD = 5;
+const DEFAULT_CIRCUIT_INITIAL_BREAK_SECONDS = 1_800;
 const MIN_HTTP_PORT = 1_024;
 const MAX_HTTP_PORT = 65_535;
 const MIN_POLL_TIMEOUT_SECONDS = 2;
 const MAX_POLL_TIMEOUT_SECONDS = 30;
+const MIN_CIRCUIT_FAILURE_THRESHOLD = 2;
+const MAX_CIRCUIT_FAILURE_THRESHOLD = 10;
+const MIN_CIRCUIT_BREAK_SECONDS = 300;
+const MAX_CIRCUIT_BREAK_SECONDS = 86_400;
 const MAX_SECONDS_WITH_SAFE_MILLISECONDS = Math.floor(Number.MAX_SAFE_INTEGER / 1_000);
 
 export type RuntimeConfigurationVariable =
+  | 'ARCGIS_EMERGENCY_DISABLED'
+  | 'CIRCUIT_FAILURE_THRESHOLD'
+  | 'CIRCUIT_INITIAL_BREAK_SECONDS'
   | 'HTTP_PORT'
   | 'MAX_BACKOFF_SECONDS'
   | 'POLL_ENABLED'
@@ -24,6 +33,9 @@ export type RuntimeConfigurationErrorReason =
   | 'out-of-range';
 
 export interface RuntimeConfiguration {
+  readonly arcgisEmergencyDisabled: boolean;
+  readonly circuitFailureThreshold: number;
+  readonly circuitInitialBreakMs: number;
   readonly httpPort: number;
   readonly pollEnabled: boolean;
   readonly pollIntervalMs: number;
@@ -59,6 +71,15 @@ export function parseRuntimeConfiguration(
   const pollEnabled = parseBoolean(environment.POLL_ENABLED, 'POLL_ENABLED', false);
   if (!pollEnabled.ok) {
     return pollEnabled;
+  }
+
+  const arcgisEmergencyDisabled = parseBoolean(
+    environment.ARCGIS_EMERGENCY_DISABLED,
+    'ARCGIS_EMERGENCY_DISABLED',
+    false,
+  );
+  if (!arcgisEmergencyDisabled.ok) {
+    return arcgisEmergencyDisabled;
   }
 
   const pollIntervalSeconds = parseInteger(
@@ -97,14 +118,39 @@ export function parseRuntimeConfiguration(
     return failure('MAX_BACKOFF_SECONDS', 'below-poll-interval');
   }
 
+  const circuitFailureThreshold = parseInteger(
+    environment.CIRCUIT_FAILURE_THRESHOLD,
+    'CIRCUIT_FAILURE_THRESHOLD',
+    DEFAULT_CIRCUIT_FAILURE_THRESHOLD,
+    MIN_CIRCUIT_FAILURE_THRESHOLD,
+    MAX_CIRCUIT_FAILURE_THRESHOLD,
+  );
+  if (!circuitFailureThreshold.ok) {
+    return circuitFailureThreshold;
+  }
+
+  const circuitInitialBreakSeconds = parseInteger(
+    environment.CIRCUIT_INITIAL_BREAK_SECONDS,
+    'CIRCUIT_INITIAL_BREAK_SECONDS',
+    DEFAULT_CIRCUIT_INITIAL_BREAK_SECONDS,
+    MIN_CIRCUIT_BREAK_SECONDS,
+    MAX_CIRCUIT_BREAK_SECONDS,
+  );
+  if (!circuitInitialBreakSeconds.ok) {
+    return circuitInitialBreakSeconds;
+  }
+
   return Object.freeze({
     ok: true,
     value: Object.freeze({
       httpPort: httpPort.value,
       pollEnabled: pollEnabled.value,
+      arcgisEmergencyDisabled: arcgisEmergencyDisabled.value,
       pollIntervalMs: pollIntervalSeconds.value * 1_000,
       pollTimeoutMs: pollTimeoutSeconds.value * 1_000,
       maxBackoffMs: maxBackoffSeconds.value * 1_000,
+      circuitFailureThreshold: circuitFailureThreshold.value,
+      circuitInitialBreakMs: circuitInitialBreakSeconds.value * 1_000,
     }),
   });
 }

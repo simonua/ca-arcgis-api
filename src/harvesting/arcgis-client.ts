@@ -9,9 +9,14 @@ import { buildArcGisCollectionUrl } from './arcgis-query.ts';
 import { validateArcGisSourceResponse } from './source-validator.ts';
 
 export const MAX_ARCGIS_RESPONSE_BYTES = 262_144 as const;
+export const MAX_RETRY_AFTER_DELAY_MS = 86_400_000 as const;
 
 const MAX_ETAG_LENGTH = 256;
 const ETAG_PATTERN = /^(?:W\/)?"[!#-~]*"$/;
+
+export type ArcGisRetryAfter =
+  | Readonly<{ status: 'accepted'; retryAtEpochMs: number }>
+  | Readonly<{ status: 'operator-review' }>;
 
 export type ArcGisCollectionResult =
   | Readonly<{
@@ -21,7 +26,11 @@ export type ArcGisCollectionResult =
     etag?: string;
   }>
   | Readonly<{ ok: true; result: 'not-modified' }>
-  | Readonly<{ ok: false; failureClass: ArcGisFailureClass }>;
+  | Readonly<{
+    ok: false;
+    failureClass: ArcGisFailureClass;
+    retryAfter?: ArcGisRetryAfter;
+  }>;
 
 export interface ArcGisCollectionRequest {
   readonly etag?: string;
@@ -97,10 +106,22 @@ export function createArcGisClient(dependencies: ArcGisClientDependencies): ArcG
         return fail('authorization', response.status, responseBytesHeader);
       }
       if (response.status === 429) {
-        return fail('rate-limited', response.status, responseBytesHeader);
+        return fail(
+          'rate-limited',
+          response.status,
+          responseBytesHeader,
+          'not-evaluated',
+          readRetryAfter(response.headers.get('retry-after'), startedAtEpochMs),
+        );
       }
       if (response.status >= 500) {
-        return fail('http-server-error', response.status, responseBytesHeader);
+        return fail(
+          'http-server-error',
+          response.status,
+          responseBytesHeader,
+          'not-evaluated',
+          readRetryAfter(response.headers.get('retry-after'), startedAtEpochMs),
+        );
       }
       if (response.status < 200 || response.status >= 300) {
         return fail('http-client-error', response.status, responseBytesHeader);
@@ -167,6 +188,7 @@ export function createArcGisClient(dependencies: ArcGisClientDependencies): ArcG
         httpStatus?: number,
         responseBytes?: number,
         validatorResult: 'not-evaluated' | 'rejected' = 'not-evaluated',
+        retryAfter?: ArcGisRetryAfter,
       ): ArcGisCollectionResult {
         consecutiveFailures += 1;
         emit({
@@ -178,7 +200,11 @@ export function createArcGisClient(dependencies: ArcGisClientDependencies): ArcG
           ...(httpStatus === undefined ? {} : { httpStatus }),
           ...(responseBytes === undefined ? {} : { responseBytes }),
         });
-        return Object.freeze({ ok: false, failureClass });
+        return Object.freeze({
+          ok: false,
+          failureClass,
+          ...(retryAfter === undefined ? {} : { retryAfter }),
+        });
       }
 
       function emit(event: ArcGisAttemptEventDetails): void {
@@ -275,6 +301,41 @@ function readValidEtag(value: string | undefined): string | undefined {
     return undefined;
   }
   return value;
+}
+
+function readRetryAfter(value: string | null, nowEpochMs: number): ArcGisRetryAfter | undefined {
+  if (value === null || !Number.isSafeInteger(nowEpochMs) || nowEpochMs < 0) {
+    return undefined;
+  }
+
+  let delayMs: number | undefined;
+  if (/^(?:0|[1-9][0-9]*)$/.test(value)) {
+    const seconds = Number(value);
+    if (!Number.isSafeInteger(seconds) || seconds > MAX_RETRY_AFTER_DELAY_MS / 1_000) {
+      return Object.freeze({ status: 'operator-review' });
+    }
+    delayMs = seconds * 1_000;
+  } else if (
+    /^[A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$/.test(
+      value,
+    )
+  ) {
+    const retryAtEpochMs = Date.parse(value);
+    if (!Number.isFinite(retryAtEpochMs) || new Date(retryAtEpochMs).toUTCString() !== value) {
+      return undefined;
+    }
+    delayMs = Math.max(0, retryAtEpochMs - nowEpochMs);
+  } else {
+    return undefined;
+  }
+
+  if (delayMs > MAX_RETRY_AFTER_DELAY_MS) {
+    return Object.freeze({ status: 'operator-review' });
+  }
+  if (delayMs === 0) {
+    return undefined;
+  }
+  return Object.freeze({ status: 'accepted', retryAtEpochMs: nowEpochMs + delayMs });
 }
 
 function isRedirectStatus(status: number): boolean {

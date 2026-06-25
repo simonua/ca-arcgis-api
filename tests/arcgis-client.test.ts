@@ -80,6 +80,51 @@ Deno.test('ArcGIS client classifies rejected status and content types', async ()
   );
 });
 
+Deno.test('ArcGIS client surfaces only bounded valid Retry-After directives', async () => {
+  const accepted = await createClient(
+    () => Promise.resolve(responseAt(null, { status: 429, headers: { 'Retry-After': '3600' } })),
+    [],
+  ).collect();
+  assert(!accepted.ok, 'Expected rate limit failure');
+  assertEquals(accepted.retryAfter?.status, 'accepted');
+  if (accepted.retryAfter?.status === 'accepted') {
+    assertEquals(accepted.retryAfter.retryAtEpochMs, NOW_EPOCH_MS + 3_600_000);
+  }
+
+  const retryDate = new Date(NOW_EPOCH_MS + 7_200_000).toUTCString();
+  const acceptedDate = await createClient(
+    () => Promise.resolve(responseAt(null, { status: 503, headers: { 'Retry-After': retryDate } })),
+    [],
+  ).collect();
+  assert(!acceptedDate.ok, 'Expected server failure');
+  assertEquals(acceptedDate.retryAfter?.status, 'accepted');
+
+  const implausible = await createClient(
+    () => Promise.resolve(responseAt(null, { status: 503, headers: { 'Retry-After': '86401' } })),
+    [],
+  ).collect();
+  assert(!implausible.ok, 'Expected server failure');
+  assertEquals(implausible.retryAfter?.status, 'operator-review');
+
+  const malformed = await createClient(
+    () => Promise.resolve(responseAt(null, { status: 429, headers: { 'Retry-After': '3e2' } })),
+    [],
+  ).collect();
+  assert(!malformed.ok, 'Expected rate limit failure');
+  assert(!Object.hasOwn(malformed, 'retryAfter'));
+
+  const normalizedMalformedDate = await createClient(
+    () =>
+      Promise.resolve(responseAt(null, {
+        status: 503,
+        headers: { 'Retry-After': 'Mon, 31 Feb 2026 00:00:00 GMT' },
+      })),
+    [],
+  ).collect();
+  assert(!normalizedMalformedDate.ok, 'Expected server failure');
+  assert(!Object.hasOwn(normalizedMalformedDate, 'retryAfter'));
+});
+
 Deno.test('ArcGIS client enforces declared and streamed response byte ceilings', async () => {
   await assertFailure(
     () =>
