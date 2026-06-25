@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "denoland.vscode-deno",
+    "DavidAnson.vscode-markdownlint",
+    "ms-azuretools.vscode-bicep"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CA ArcGIS API: Verify",
+      "type": "shell",
+      "command": "deno task verify",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": "$deno"
+    },
+    {
+      "label": "CA ArcGIS API: Test",
+      "type": "shell",
+      "command": "deno task test",
+      "group": "test",
+      "problemMatcher": "$deno"
+    },
+    {
+      "label": "CA ArcGIS API: Format",
+      "type": "shell",
+      "command": "deno task fmt",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.deno/
+.playwright-mcp/
+.vscode-test/
+coverage/
+dist/
+test-results/
+
+# Local deployment files may contain machine-specific values.
+deploy/local/*.env
+deploy/local/*.yaml
+!deploy/local/*.example.yaml

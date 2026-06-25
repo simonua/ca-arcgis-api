@@ -1,0 +1,8 @@
+# Keep text files consistent across operating systems and editors.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
