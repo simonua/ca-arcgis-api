@@ -745,12 +745,12 @@ Prefer platform metric alerts where possible and use narrowly scoped scheduled-q
 
 ### Image
 
-- Build with a multi-stage Dockerfile using an official patch-pinned `denoland/deno` builder image, pinned by digest when implementation begins.
+- Build with a multi-stage Dockerfile using the official Deno 2.9.0 Linux/amd64 builder image pinned by digest.
 - Copy `deno.json` and `deno.lock` before source files, resolve with the frozen lockfile, and fail on dependency drift or unapproved lifecycle scripts.
 - Run format, lint, type, test, audit, and OpenAPI generation gates before `deno compile`. Compile one `linux/amd64` executable initially with required configuration, schemas, OpenAPI, and optional Swagger assets embedded.
-- Use `gcr.io/distroless/cc-debian12:nonroot`, or its current reviewed successor, as the digest-pinned final base because a Deno-compiled executable still requires the C runtime.
+- Use the reviewed Linux/amd64 digest of `gcr.io/distroless/cc-debian12:nonroot` as the final base because a Deno-compiled executable still requires the C runtime.
 - Copy only the compiled executable into the final stage. Do not copy Deno, source, dependency caches, a shell, package manager, compiler, test files, symbols, or standalone configuration files.
-- Use the image's built-in `nonroot` user and port `8080`; declare `USER nonroot` explicitly in the final stage.
+- Use the image's built-in non-root identity and port `8080`; declare numeric `USER 65532:65532` explicitly in the final stage.
 - Embed only the narrow runtime permissions approved above. Set the listener host and port through allowlisted environment variables, and set `DENO_NO_UPDATE_CHECK=1` and `DENO_NO_PROMPT=1` where applicable to build or development commands.
 - Use the executable directly as `ENTRYPOINT`; do not add a shell script or init package.
 - Handle `SIGTERM` by stopping new polls, aborting the active source request, finishing in-flight API responses within a bound, and closing cleanly.
@@ -969,7 +969,7 @@ Invoke the composed `Request => Response` handler directly with an in-memory fix
 - Assert the final image uses the `nonroot` user, contains no shell or package manager, and has only the compiled executable and expected C-runtime files.
 - Run as the declared non-root user with all capabilities dropped, a read-only filesystem, and no writable volume.
 - Verify health, readiness, signal shutdown, empty restart behavior, and no filesystem writes.
-- Verify the executable has only the approved Deno environment and network permissions and cannot read files, write files, spawn subprocesses, use FFI, or contact an unapproved host.
+- Verify the executable has only the approved Deno environment and network grants, embeds no-prompt behavior for unlisted grants, and denies file reads, file writes, subprocesses, FFI, and system information.
 - Flood all public routes during startup, normal operation, cache misses, and source failure; assert ArcGIS request counts remain scheduler-owned and bounded.
 - Simulate source failures, `429`, manual diagnostics, task delays, clock changes, and container restart policy; verify the documented request ceilings and no-overlap invariant.
 - Run across closed and opening boundaries and assert zero out-of-window DNS or HTTP attempts, one opening attempt at most, circuit behavior, and retained snapshot service.
@@ -978,6 +978,14 @@ Invoke the composed `Request => Response` handler directly with an in-memory fix
 - Verify the compiled executable was not stripped and starts successfully from the distroless image.
 - Record compressed image size and fail when unexplained growth exceeds an approved budget.
 - Verify image architecture for the intended host platform before deployment.
+
+The offline image contract implements a bounded `--container-security-check` mode for these
+permission assertions. It only queries permission states and is exercised with networking disabled,
+a read-only root filesystem, all capabilities dropped, no-new-privileges, and bounded PID and
+memory settings. Static tests also pin the builder, runtime, compile permissions, UID/GID,
+entrypoint, and build-context allowlist. Full startup, health/readiness, restart, and shutdown
+container evidence remains pending until reviewed static configuration permits normal composition;
+the security-check mode must not weaken that fail-closed boundary.
 
 ### Bicep And Azure Contract Tests
 

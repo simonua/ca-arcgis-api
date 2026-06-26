@@ -1,0 +1,15 @@
+*
+!.editorconfig
+!.gitattributes
+!.dockerignore
+!.github/
+!.github/workflows/
+!.github/workflows/ci.yml
+!Dockerfile
+!deno.json
+!deno.lock
+!src/**
+!tests/**
+!tools/**
+!schemas/**
+!fixtures/**

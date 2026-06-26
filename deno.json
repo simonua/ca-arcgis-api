@@ -48,10 +48,13 @@
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
-    "check": "deno check src/index.ts tools/json-schema-artifacts.ts tests/scaffold.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/json-schema-contracts.test.ts tests/arcgis-events.test.ts tests/operational-metrics.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts tests/collection-scheduler-runner.test.ts tests/pool-normalizer.test.ts tests/snapshot-store.test.ts tests/collection-snapshot-publisher.test.ts tests/semantic-freshness-projector.test.ts tests/api-representation-cache.test.ts tests/inbound-rate-limiter.test.ts tests/api-handler.test.ts tests/api-runtime.test.ts",
+    "check": "deno check src/index.ts tools/json-schema-artifacts.ts tools/verify-container-image.ts tests/scaffold.test.ts tests/container-build-contract.test.ts tests/container-security-check.test.ts tests/arcgis-query.test.ts tests/source-validator.test.ts tests/json-schema-contracts.test.ts tests/arcgis-events.test.ts tests/operational-metrics.test.ts tests/operating-window-gate.test.ts tests/arcgis-rate-gate.test.ts tests/source-send-gate.test.ts tests/runtime-config.test.ts tests/arcgis-client.test.ts tests/collection-resilience.test.ts tests/collection-scheduler.test.ts tests/collection-scheduler-runner.test.ts tests/pool-normalizer.test.ts tests/snapshot-store.test.ts tests/collection-snapshot-publisher.test.ts tests/semantic-freshness-projector.test.ts tests/api-representation-cache.test.ts tests/inbound-rate-limiter.test.ts tests/api-handler.test.ts tests/api-runtime.test.ts",
+    "compile:container": "deno compile --no-prompt --target=x86_64-unknown-linux-gnu --output=ca-arcgis-api --allow-env=ARCGIS_EMERGENCY_DISABLED,CIRCUIT_FAILURE_THRESHOLD,CIRCUIT_INITIAL_BREAK_SECONDS,HTTP_PORT,MAX_BACKOFF_SECONDS,POLL_ENABLED,POLL_INTERVAL_SECONDS,POLL_TIMEOUT_SECONDS --allow-net=0.0.0.0:8080,services8.arcgis.com:443 --deny-read --deny-write --deny-run --deny-ffi --deny-sys src/index.ts",
+    "container:build": "docker build --pull --platform=linux/amd64 --tag=ca-arcgis-api:local .",
+    "container:verify": "deno run --allow-run=docker tools/verify-container-image.ts ca-arcgis-api:local",
     "schemas:generate": "deno run --allow-write=schemas tools/json-schema-artifacts.ts write",
     "schemas:check": "deno run --allow-read=schemas tools/json-schema-artifacts.ts check",
-    "test": "deno test --no-prompt --parallel tests/",
+    "test": "deno test --no-prompt --parallel --allow-read=Dockerfile,.dockerignore,deno.json,.github/workflows/ci.yml tests/",
     "verify": "deno task fmt:check && deno task lint && deno task check && deno task schemas:check && deno task test"
   }
 }

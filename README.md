@@ -4,10 +4,10 @@
 ArcGIS pool-status layer and approved consumers such as the
 [CNSL web app](https://github.com/simonua/cnsl).
 
-The repository contains the reviewed integration plan, offline harvester trust boundary, and an
-injected read-only HTTP runtime. It does not yet contain executable production composition, a
-published API, container image, or Azure deployment, and routine development does not enable live
-ArcGIS access.
+The repository contains the reviewed integration plan, offline harvester trust boundary, an
+injected read-only HTTP runtime, and a hardened container build. It does not yet contain executable
+production composition, a published container image, or an Azure deployment, and routine
+development does not enable live ArcGIS access.
 
 ## Current Status
 
@@ -45,6 +45,11 @@ ArcGIS access.
 - Deterministic JSON Schemas for the fixed ArcGIS response, normalized snapshot, and public API
   responses are generated from code-owned contracts. Synthetic accepted, rejected, boundary, and
   hostile fixtures exercise the explicit runtime source validator; schemas do not replace it.
+- The Linux/amd64 container build compiles one permission-bounded executable into a digest-pinned
+  Distroless C-runtime image. The final image runs as UID/GID `65532`, has no shell or package
+  manager, declares no writable volume or utility-based health check, and supports read-only root
+  operation. Its bounded security-check mode reports permission states without starting the API or
+  performing source, filesystem, subprocess, or FFI operations.
 - Production infrastructure will be Bicep-only when deployment is authorized.
 
 ## Repository Layout
@@ -76,11 +81,24 @@ Install the Deno version pinned in [the CI workflow](.github/workflows/ci.yml), 
 | `deno task check` | Type-check the service and tests |
 | `deno task schemas:generate` | Regenerate reviewable JSON Schema artifacts |
 | `deno task schemas:check` | Fail when generated schemas are missing or stale |
-| `deno task test` | Run deterministic tests with no ambient permissions |
+| `deno task test` | Run deterministic tests with only build-contract file reads |
+| `deno task compile:container` | Compile the Linux/amd64 executable with embedded permissions |
+| `deno task container:build` | Build the local digest-pinned Linux/amd64 image |
+| `deno task container:verify` | Inspect and harden-run `ca-arcgis-api:local` without network access |
 | `deno task verify` | Run the complete current repository gate |
 
 Tests must use fixtures and injected dependencies. They must not contact ArcGIS, Azure, CNSL
 production, or any other live service.
+
+The container verifier checks architecture, image size, UID/GID, direct entrypoint, exposed port,
+absent health check and volumes, forbidden runtime paths, and the executable's embedded Deno
+permissions. Normal startup, health/readiness, and shutdown smoke checks remain blocked until the
+reviewed static configuration artifacts required by `src/index.ts` exist; the image must continue
+to fail closed in the meantime.
+
+CI repeats the image build and hardened verification on Linux, then uses a commit-pinned Trivy
+action to fail on high or critical OS/library vulnerabilities and detected secrets. It does not
+publish the image.
 
 ## Remaining Approval Gates
 

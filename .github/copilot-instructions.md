@@ -93,8 +93,10 @@ access, a public API, container publication, Azure resources, DNS changes, or pr
 - Deno configuration, shared contracts, or release candidates: run `deno task verify`.
 - Bicep changes: format, lint, build, and run a deployment what-if against an explicitly approved
   non-production scope before any deployment request.
-- Container changes: build the image, inspect its permissions and user, and run fixture-backed
-  health/readiness checks. Do not enable live ArcGIS access for routine verification.
+- Container changes: run the focused build-contract tests, build the image, and run
+  `deno task container:verify` under its no-network, read-only, dropped-capability contract. Run
+  fixture-backed health/readiness checks only when reviewed startup composition exists. Do not
+  enable live ArcGIS access for routine verification.
 
 Report exact commands and test files executed. Disclose checks that could not run; do not claim
 live-source, Azure, security, or deployment validation without evidence.
